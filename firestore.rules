@@ -1,0 +1,588 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core helper primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdminEmail() {
+      return isVerified() && request.auth.token.email == 'kasahungudisa12@gmail.com';
+    }
+
+    function isAdmin() {
+      return isAdminEmail()
+        || (isVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function isValidUserPublic(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'photoUrl', 'city', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 500))
+        && (!('city' in data) || (data.city is string && data.city.size() <= 60))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data) {
+      return data.keys().hasAll(['uid', 'email', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'phone', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 150
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 30))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidListingSpecs(specs) {
+      return specs is map
+        && specs.keys().hasOnly([
+          'bedrooms',
+          'bathrooms',
+          'areaSqm',
+          'titleDeed',
+          'vehicleYear',
+          'mileageKm',
+          'transmission',
+          'fuelType',
+          'itemCondition',
+          'roomClass',
+          'tenantPreference'
+        ])
+        && (!('bedrooms' in specs) || (specs.bedrooms is int && specs.bedrooms >= 0 && specs.bedrooms <= 30))
+        && (!('bathrooms' in specs) || (specs.bathrooms is int && specs.bathrooms >= 0 && specs.bathrooms <= 30))
+        && (!('areaSqm' in specs) || (specs.areaSqm is number && specs.areaSqm >= 0 && specs.areaSqm <= 1000000))
+        && (!('titleDeed' in specs) || (specs.titleDeed is string && specs.titleDeed.size() <= 60))
+        && (!('vehicleYear' in specs) || (specs.vehicleYear is int && specs.vehicleYear >= 1960 && specs.vehicleYear <= 2030))
+        && (!('mileageKm' in specs) || (specs.mileageKm is number && specs.mileageKm >= 0 && specs.mileageKm <= 2000000))
+        && (!('transmission' in specs) || (specs.transmission is string && specs.transmission.size() <= 30))
+        && (!('fuelType' in specs) || (specs.fuelType is string && specs.fuelType.size() <= 30))
+        && (!('itemCondition' in specs) || (specs.itemCondition is string && specs.itemCondition.size() <= 30))
+        && (!('roomClass' in specs) || specs.roomClass in ['1_class', '2_class', '3_plus'])
+        && (!('tenantPreference' in specs) || specs.tenantPreference in ['late', 'bale_tedar', 'any']);
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll([
+          'ownerId', 'sellerName', 'category', 'transactionType',
+          'title', 'description', 'price', 'currency', 'pricePeriod',
+          'neighborhood', 'city', 'imageUrl', 'status', 'specs',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'sellerName', 'category', 'transactionType',
+          'title', 'description', 'descriptionVoiceUrl', 'descriptionVoiceDurationSec',
+          'price', 'currency', 'pricePeriod',
+          'neighborhood', 'city', 'imageUrl', 'photoCount', 'status', 'specs',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.ownerId)
+        && data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80
+        && data.category in ['apartment', 'house', 'land', 'vehicle', 'goods']
+        && data.transactionType in ['sale', 'rent']
+        && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
+        && data.description is string && data.description.size() <= 2000
+        && (
+          data.description.size() >= 10
+          || ('descriptionVoiceUrl' in data && data.descriptionVoiceUrl is string && data.descriptionVoiceUrl.size() >= 20)
+        )
+        && (!('descriptionVoiceUrl' in data) || (data.descriptionVoiceUrl is string && data.descriptionVoiceUrl.size() <= 220000))
+        && (!('descriptionVoiceDurationSec' in data) || (data.descriptionVoiceDurationSec is int && data.descriptionVoiceDurationSec >= 0 && data.descriptionVoiceDurationSec <= 120))
+        && data.price is number && data.price > 0 && data.price <= 10000000000
+        && data.currency in ['ETB', 'USD']
+        && data.pricePeriod in ['total', 'monthly', 'yearly']
+        && data.neighborhood is string && data.neighborhood.size() >= 2 && data.neighborhood.size() <= 80
+        && data.city is string && data.city.size() >= 2 && data.city.size() <= 60
+        && data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 180000
+        && (!('photoCount' in data) || (data.photoCount is int && data.photoCount >= 1 && data.photoCount <= 6))
+        && data.status in ['available', 'reserved', 'closed']
+        && isValidListingSpecs(data.specs)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidListingPhoto(data) {
+      return data.keys().hasAll([
+          'listingId', 'ownerId', 'slotIndex', 'angleLabel',
+          'imageDataUrl', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'listingId', 'ownerId', 'slotIndex', 'angleLabel',
+          'imageDataUrl', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.listingId)
+        && isValidId(data.ownerId)
+        && data.slotIndex is int && data.slotIndex >= 0 && data.slotIndex <= 5
+        && data.angleLabel is string && data.angleLabel.size() >= 1 && data.angleLabel.size() <= 80
+        && data.imageDataUrl is string && data.imageDataUrl.size() >= 1 && data.imageDataUrl.size() <= 200000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSavedItem(data) {
+      return data.keys().hasAll(['userId', 'listingId', 'createdAt'])
+        && data.keys().hasOnly(['userId', 'listingId', 'createdAt'])
+        && isValidId(data.userId)
+        && data.userId == request.auth.uid
+        && isValidId(data.listingId)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidInquiry(data) {
+      return data.keys().hasAll([
+          'listingId', 'listingTitle', 'sellerId', 'sellerName',
+          'senderId', 'senderName', 'senderContact', 'message',
+          'status', 'sellerReply', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'listingId', 'listingTitle', 'sellerId', 'sellerName',
+          'senderId', 'senderName', 'senderContact', 'message',
+          'status', 'sellerReply', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.listingId)
+        && data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 120
+        && isValidId(data.sellerId)
+        && data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80
+        && isValidId(data.senderId)
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 80
+        && data.senderContact is string && data.senderContact.size() >= 3 && data.senderContact.size() <= 80
+        && data.message is string && data.message.size() >= 3 && data.message.size() <= 1000
+        && data.status in ['open', 'replied', 'closed']
+        && data.sellerReply is string && data.sellerReply.size() <= 1000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+          'orderNumber', 'listingId', 'listingTitle', 'listingCategory',
+          'transactionType', 'listingImage', 'sellerId', 'sellerName',
+          'buyerId', 'buyerName', 'buyerPhone', 'deliveryAddress',
+          'paymentMethod', 'quantity', 'unitPrice', 'totalAmount',
+          'currency', 'notes', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'orderNumber', 'listingId', 'listingTitle', 'listingCategory',
+          'transactionType', 'listingImage', 'sellerId', 'sellerName',
+          'buyerId', 'buyerName', 'buyerPhone', 'deliveryAddress',
+          'paymentMethod', 'quantity', 'unitPrice', 'totalAmount',
+          'currency', 'notes', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.orderNumber is string && data.orderNumber.size() >= 3 && data.orderNumber.size() <= 32
+        && isValidId(data.listingId)
+        && data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 120
+        && data.listingCategory in ['apartment', 'house', 'land', 'vehicle', 'goods']
+        && data.transactionType in ['sale', 'rent']
+        && data.listingImage is string && data.listingImage.size() >= 1 && data.listingImage.size() <= 180000
+        && isValidId(data.sellerId)
+        && data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80
+        && isValidId(data.buyerId)
+        && data.buyerName is string && data.buyerName.size() >= 1 && data.buyerName.size() <= 80
+        && data.buyerPhone is string && data.buyerPhone.size() >= 3 && data.buyerPhone.size() <= 30
+        && data.deliveryAddress is string && data.deliveryAddress.size() >= 2 && data.deliveryAddress.size() <= 200
+        && data.paymentMethod in ['cash_on_delivery', 'bank_transfer', 'telebirr', 'inspection_escrow']
+        && data.quantity is int && data.quantity >= 1 && data.quantity <= 100
+        && data.unitPrice is number && data.unitPrice > 0 && data.unitPrice <= 10000000000
+        && data.totalAmount is number && data.totalAmount > 0 && data.totalAmount <= 100000000000
+        && data.currency in ['ETB', 'USD']
+        && data.notes is string && data.notes.size() <= 500
+        && data.status in ['pending', 'confirmed', 'completed', 'cancelled']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBuyerRequest(data) {
+      return data.keys().hasAll([
+          'buyerId', 'buyerName', 'transactionType', 'category',
+          'title', 'maxBudget', 'currency', 'preferredNeighborhood',
+          'notes', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'buyerId', 'buyerName', 'transactionType', 'category',
+          'title', 'maxBudget', 'currency', 'preferredNeighborhood',
+          'notes', 'roomClass', 'tenantPreference', 'status', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.buyerId)
+        && data.buyerName is string && data.buyerName.size() >= 1 && data.buyerName.size() <= 80
+        && data.transactionType in ['sale', 'rent']
+        && data.category in ['apartment', 'house', 'land', 'vehicle', 'goods']
+        && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
+        && data.maxBudget is number && data.maxBudget > 0 && data.maxBudget <= 10000000000
+        && data.currency in ['ETB', 'USD']
+        && data.preferredNeighborhood is string && data.preferredNeighborhood.size() >= 2 && data.preferredNeighborhood.size() <= 80
+        && data.notes is string && data.notes.size() <= 500
+        && (!('roomClass' in data) || data.roomClass in ['1_class', '2_class', '3_plus'])
+        && (!('tenantPreference' in data) || data.tenantPreference in ['late', 'bale_tedar', 'any'])
+        && data.status in ['active', 'fulfilled', 'closed']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidContactEntry(data) {
+      return data.keys().hasAll([
+          'userId', 'userName', 'userEmail', 'role', 'actionType',
+          'phone', 'listingId', 'listingTitle', 'neighborhood', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'userId', 'userName', 'userEmail', 'role', 'actionType',
+          'phone', 'listingId', 'listingTitle', 'neighborhood', 'createdAt'
+        ])
+        && isValidId(data.userId)
+        && data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 80
+        && data.userEmail is string && data.userEmail.size() >= 3 && data.userEmail.size() <= 150
+        && data.role in ['seller', 'buyer']
+        && data.actionType in ['listing_post', 'order', 'inquiry', 'buyer_request']
+        && data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30
+        && data.listingId is string && data.listingId.size() <= 128
+        && (data.listingId == '' || isValidId(data.listingId))
+        && data.listingTitle is string && data.listingTitle.size() <= 120
+        && data.neighborhood is string && data.neighborhood.size() <= 80
+        && data.createdAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll([
+          'recipientId', 'actorId', 'actorName', 'orderId', 'orderNumber',
+          'listingId', 'listingTitle', 'eventType', 'amount', 'currency',
+          'isRead', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'recipientId', 'actorId', 'actorName', 'orderId', 'orderNumber',
+          'listingId', 'listingTitle', 'eventType', 'amount', 'currency',
+          'isRead', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.recipientId)
+        && isValidId(data.actorId)
+        && data.actorName is string && data.actorName.size() >= 1 && data.actorName.size() <= 80
+        && isValidId(data.orderId)
+        && data.orderNumber is string && data.orderNumber.size() >= 3 && data.orderNumber.size() <= 32
+        && isValidId(data.listingId)
+        && data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 120
+        && data.eventType in ['order_placed', 'order_confirmed', 'order_completed', 'order_cancelled']
+        && data.amount is number && data.amount > 0 && data.amount <= 100000000000
+        && data.currency in ['ETB', 'USD']
+        && data.isRead is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOrderNotificationFields(data, ord) {
+      return data.listingId == ord.listingId
+        && data.orderNumber == ord.orderNumber
+        && data.amount == ord.totalAmount
+        && data.currency == ord.currency
+        && (
+          (
+            data.eventType == 'order_placed'
+            && ord.status == 'pending'
+            && ord.buyerId == request.auth.uid
+            && (
+              data.recipientId == ord.sellerId
+              || (ord.sellerId == 'showcase_system' && data.recipientId == ord.buyerId)
+            )
+          )
+          || (
+            data.eventType in ['order_confirmed', 'order_completed', 'order_cancelled']
+            && (
+              (data.eventType == 'order_confirmed' && ord.status == 'confirmed')
+              || (data.eventType == 'order_completed' && ord.status == 'completed')
+              || (data.eventType == 'order_cancelled' && ord.status == 'cancelled')
+            )
+            && (ord.sellerId == request.auth.uid || ord.buyerId == request.auth.uid || isAdmin())
+            && (data.recipientId == ord.buyerId || data.recipientId == ord.sellerId)
+          )
+        );
+    }
+
+    function isValidOrderNotificationCreate(data) {
+      return existsAfter(/databases/$(database)/documents/orders/$(data.orderId))
+        && isValidOrderNotificationFields(
+          data,
+          getAfter(/databases/$(database)/documents/orders/$(data.orderId)).data
+        );
+    }
+
+    // Platform admin registry (strictly bootstrapped admin email only)
+    match /admins/{adminId} {
+      allow get: if isAdminEmail() && isValidId(adminId);
+    }
+
+    // Public user display profiles (no PII)
+    match /users/{userId} {
+      allow get: if isValidId(userId);
+      allow create: if isVerified() && isOwner(userId) && isValidId(userId)
+        && isValidUserPublic(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isOwner(userId) && isValidId(userId)
+        && isValidUserPublic(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoUrl', 'city', 'updatedAt']);
+
+      // Owner-only + Admin PII subcollection
+      match /private/{docId} {
+        allow get: if (isOwner(userId) || isAdmin()) && docId == 'info';
+        allow create: if isVerified() && isOwner(userId) && docId == 'info'
+          && isValidUserPrivate(incoming())
+          && incoming().updatedAt == request.time;
+        allow update: if isVerified() && isOwner(userId) && docId == 'info'
+          && isValidUserPrivate(incoming())
+          && incoming().uid == existing().uid
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'phone', 'updatedAt']);
+      }
+
+      // Owner-only saved listings
+      match /saved/{listingId} {
+        allow get: if isOwner(userId) && isValidId(listingId);
+        allow list: if isOwner(userId) && resource.data.userId == request.auth.uid;
+        allow create: if isVerified() && isOwner(userId) && isValidId(listingId)
+          && isValidSavedItem(incoming())
+          && incoming().listingId == listingId
+          && incoming().createdAt == request.time;
+        allow delete: if isVerified() && isOwner(userId) && isValidId(listingId);
+      }
+    }
+
+    // Public marketplace listings (no PII)
+    match /listings/{listingId} {
+      allow get: if isValidId(listingId);
+      allow list: if resource.data.status in ['available', 'reserved', 'closed'];
+      allow create: if isVerified() && isValidId(listingId)
+        && isValidListing(incoming())
+        && incoming().ownerId == request.auth.uid
+        && incoming().status == 'available'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(listingId)
+        && isValidListing(incoming())
+        && (isAdmin() || (existing().ownerId == request.auth.uid && existing().status != 'closed'))
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'description', 'descriptionVoiceUrl', 'descriptionVoiceDurationSec',
+            'price', 'currency', 'pricePeriod',
+            'neighborhood', 'city', 'imageUrl', 'photoCount', 'specs', 'updatedAt'
+          ])
+          || incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+        );
+      allow delete: if isVerified() && isValidId(listingId)
+        && (existing().ownerId == request.auth.uid || isAdmin());
+
+      // Up to 6 multi-angle photos per listing
+      match /photos/{photoId} {
+        allow get: if isValidId(listingId) && isValidId(photoId);
+        allow list: if isValidId(listingId) && resource.data.listingId == listingId;
+        allow create: if isVerified() && isValidId(listingId) && isValidId(photoId)
+          && photoId in ['slot_0', 'slot_1', 'slot_2', 'slot_3', 'slot_4', 'slot_5']
+          && isValidListingPhoto(incoming())
+          && incoming().listingId == listingId
+          && incoming().ownerId == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && existsAfter(/databases/$(database)/documents/listings/$(listingId))
+          && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid;
+        allow update: if isVerified() && isValidId(listingId) && isValidId(photoId)
+          && isValidListingPhoto(incoming())
+          && (isAdmin() || (
+            existing().ownerId == request.auth.uid
+            && exists(/databases/$(database)/documents/listings/$(listingId))
+            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+          ))
+          && incoming().listingId == existing().listingId
+          && incoming().ownerId == existing().ownerId
+          && incoming().slotIndex == existing().slotIndex
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['angleLabel', 'imageDataUrl', 'updatedAt']);
+        allow delete: if isVerified() && isValidId(listingId) && isValidId(photoId)
+          && (isAdmin() || (
+            existing().ownerId == request.auth.uid
+            && exists(/databases/$(database)/documents/listings/$(listingId))
+            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+          ));
+      }
+    }
+
+    // Private buyer-seller inquiries (raw phones excluded; admin oversees contacts)
+    match /inquiries/{inquiryId} {
+      allow get: if isSignedIn() && isValidId(inquiryId)
+        && (existing().senderId == request.auth.uid || existing().sellerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn()
+        && (resource.data.senderId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdminEmail());
+      allow create: if isVerified() && isValidId(inquiryId)
+        && isValidInquiry(incoming())
+        && incoming().senderId == request.auth.uid
+        && incoming().senderId != incoming().sellerId
+        && incoming().status == 'open'
+        && incoming().sellerReply == ''
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(incoming().listingId))
+        && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.ownerId == incoming().sellerId;
+      allow update: if isVerified() && isValidId(inquiryId)
+        && isValidInquiry(incoming())
+        && (existing().status != 'closed' || isAdmin())
+        && incoming().listingId == existing().listingId
+        && incoming().sellerId == existing().sellerId
+        && incoming().senderId == existing().senderId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (
+            existing().sellerId == request.auth.uid
+            && incoming().status in ['replied', 'closed']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['sellerReply', 'status', 'updatedAt'])
+          )
+          || (
+            (existing().senderId == request.auth.uid || existing().sellerId == request.auth.uid || isAdmin())
+            && incoming().status == 'closed'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+    }
+
+    // Private buyer orders and bookings (raw phones kept strictly in contactDirectory for admin)
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId)
+        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn()
+        && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdminEmail());
+      allow create: if isVerified() && isValidId(orderId)
+        && isValidOrder(incoming())
+        && incoming().buyerId == request.auth.uid
+        && incoming().buyerId != incoming().sellerId
+        && incoming().status == 'pending'
+        && incoming().totalAmount == incoming().unitPrice * incoming().quantity
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          (incoming().listingId.matches('^showcase_.*$') && incoming().sellerId == 'showcase_system')
+          || (
+            exists(/databases/$(database)/documents/listings/$(incoming().listingId))
+            && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.ownerId == incoming().sellerId
+            && get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.status == 'available'
+          )
+        );
+      allow update: if isVerified() && isValidId(orderId)
+        && isValidOrder(incoming())
+        && (isAdmin() || (existing().status != 'completed' && existing().status != 'cancelled'))
+        && incoming().orderNumber == existing().orderNumber
+        && incoming().listingId == existing().listingId
+        && incoming().sellerId == existing().sellerId
+        && incoming().buyerId == existing().buyerId
+        && incoming().unitPrice == existing().unitPrice
+        && incoming().quantity == existing().quantity
+        && incoming().totalAmount == existing().totalAmount
+        && incoming().currency == existing().currency
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+        && (
+          isAdmin()
+          || (existing().sellerId == request.auth.uid && incoming().status in ['confirmed', 'completed', 'cancelled'])
+          || (existing().buyerId == request.auth.uid && existing().status == 'pending' && incoming().status == 'cancelled')
+        );
+      allow delete: if isVerified() && isValidId(orderId)
+        && (isAdmin() || existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+    }
+
+    // Public buyer wanted requests (no PII)
+    match /buyerRequests/{requestId} {
+      allow get: if isValidId(requestId);
+      allow list: if resource.data.status in ['active', 'fulfilled', 'closed'];
+      allow create: if isVerified() && isValidId(requestId)
+        && isValidBuyerRequest(incoming())
+        && incoming().buyerId == request.auth.uid
+        && incoming().status == 'active'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(requestId)
+        && isValidBuyerRequest(incoming())
+        && (isAdmin() || (existing().buyerId == request.auth.uid && existing().status != 'closed'))
+        && incoming().buyerId == existing().buyerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if isVerified() && isValidId(requestId)
+        && (existing().buyerId == request.auth.uid || isAdmin());
+    }
+
+    // Admin-only seller & buyer phone directory
+    match /contactDirectory/{contactId} {
+      allow get: if isAdmin() && isValidId(contactId);
+      allow list: if isAdminEmail()
+        && resource.data.role in ['seller', 'buyer'];
+      allow create: if isVerified() && isValidId(contactId)
+        && isValidContactEntry(incoming())
+        && incoming().userId == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow delete: if isAdmin() && isValidId(contactId);
+    }
+
+    // Real-time order notifications (seller, buyer, and verified admin)
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId)
+        && (existing().recipientId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn()
+        && (resource.data.recipientId == request.auth.uid || isAdminEmail());
+      allow create: if isVerified() && isValidId(notificationId)
+        && isValidNotification(incoming())
+        && incoming().actorId == request.auth.uid
+        && incoming().isRead == false
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isValidOrderNotificationCreate(incoming());
+      allow update: if isVerified() && isValidId(notificationId)
+        && isValidNotification(incoming())
+        && (existing().recipientId == request.auth.uid || isAdmin())
+        && incoming().recipientId == existing().recipientId
+        && incoming().actorId == existing().actorId
+        && incoming().actorName == existing().actorName
+        && incoming().orderId == existing().orderId
+        && incoming().orderNumber == existing().orderNumber
+        && incoming().listingId == existing().listingId
+        && incoming().listingTitle == existing().listingTitle
+        && incoming().eventType == existing().eventType
+        && incoming().amount == existing().amount
+        && incoming().currency == existing().currency
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'updatedAt']);
+      allow delete: if isVerified() && isValidId(notificationId)
+        && (existing().recipientId == request.auth.uid || isAdmin());
+    }
+  }
+}

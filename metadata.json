@@ -1,0 +1,6 @@
+{
+  "name": "AddisGebeya",
+  "description": "Direct marketplace connecting real estate, apartments, land plots, houses for rent and sale, vehicles, and everyday goods.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

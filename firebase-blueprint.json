@@ -1,0 +1,848 @@
+{
+  "entities": {
+    "UserPublicProfile": {
+      "title": "UserPublicProfile",
+      "description": "Publicly visible seller profile metadata without PII.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Seller display name"
+        },
+        "photoUrl": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Avatar URL"
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Primary city"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["uid", "displayName", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Owner-only PII for account contact preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 150,
+          "description": "Account email"
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Optional callback phone number"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["uid", "email", "updatedAt"]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "Marketplace listing for real estate, apartments, houses, land, vehicles, or goods.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase Auth UID"
+        },
+        "sellerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Public seller name"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["apartment", "house", "land", "vehicle", "goods"],
+          "description": "Listing category"
+        },
+        "transactionType": {
+          "type": "string",
+          "enum": ["sale", "rent"],
+          "description": "Sale or rent"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "description": "Listing headline"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 2000,
+          "description": "Detailed item or property description (required >=10 chars unless voice description provided)"
+        },
+        "descriptionVoiceUrl": {
+          "type": "string",
+          "maxLength": 220000,
+          "description": "Optional voice recording data URL describing the listing"
+        },
+        "descriptionVoiceDurationSec": {
+          "type": "integer",
+          "description": "Duration of the voice description in seconds (0 to 120)"
+        },
+        "price": {
+          "type": "number",
+          "description": "Listing price amount"
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["ETB", "USD"],
+          "description": "Price currency"
+        },
+        "pricePeriod": {
+          "type": "string",
+          "enum": ["total", "monthly", "yearly"],
+          "description": "Billing period for rent or total for sale"
+        },
+        "neighborhood": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Neighborhood or sub-city"
+        },
+        "city": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60,
+          "description": "City name"
+        },
+        "imageUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180000,
+          "description": "Primary listing image path, URL, or compressed JPEG data URL"
+        },
+        "photoCount": {
+          "type": "integer",
+          "description": "Total number of uploaded angle photos (1 to 6)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["available", "reserved", "closed"],
+          "description": "Current availability status"
+        },
+        "specs": {
+          "type": "object",
+          "description": "Category-specific specifications map",
+          "properties": {
+            "bedrooms": { "type": "integer" },
+            "bathrooms": { "type": "integer" },
+            "areaSqm": { "type": "number" },
+            "titleDeed": { "type": "string", "maxLength": 60 },
+            "vehicleYear": { "type": "integer" },
+            "mileageKm": { "type": "number" },
+            "transmission": { "type": "string", "maxLength": 30 },
+            "fuelType": { "type": "string", "maxLength": 30 },
+            "itemCondition": { "type": "string", "maxLength": 30 },
+            "roomClass": {
+              "type": "string",
+              "enum": ["1_class", "2_class", "3_plus"],
+              "description": "Rental room configuration (1 Class, 2 Class, or 3+ Class)"
+            },
+            "tenantPreference": {
+              "type": "string",
+              "enum": ["late", "bale_tedar", "any"],
+              "description": "Rental tenant preference: Late (Single), Bale Tedar (Married), or Any"
+            }
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "ownerId",
+        "sellerName",
+        "category",
+        "transactionType",
+        "title",
+        "description",
+        "price",
+        "currency",
+        "pricePeriod",
+        "neighborhood",
+        "city",
+        "imageUrl",
+        "status",
+        "specs",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SavedItem": {
+      "title": "SavedItem",
+      "description": "A bookmarked listing belonging to a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner user UID"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Bookmarked listing ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Bookmark timestamp"
+        }
+      },
+      "required": ["userId", "listingId", "createdAt"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Private buyer-to-seller inquiry connecting interested parties.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Referenced listing ID"
+        },
+        "listingTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Snapshot title of the listing"
+        },
+        "sellerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Listing owner UID"
+        },
+        "sellerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Seller display name"
+        },
+        "senderId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Inquiring buyer UID"
+        },
+        "senderName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Buyer display name"
+        },
+        "senderContact": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 80,
+          "description": "Buyer phone or preferred contact shared privately with seller"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 1000,
+          "description": "Inquiry message"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "replied", "closed"],
+          "description": "Inquiry lifecycle state"
+        },
+        "sellerReply": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Reply from seller"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update timestamp"
+        }
+      },
+      "required": [
+        "listingId",
+        "listingTitle",
+        "sellerId",
+        "sellerName",
+        "senderId",
+        "senderName",
+        "senderContact",
+        "message",
+        "status",
+        "sellerReply",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Buyer purchase or rental reservation order linked to a marketplace listing.",
+      "type": "object",
+      "properties": {
+        "orderNumber": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 32,
+          "description": "Human-readable order confirmation number"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Ordered listing ID"
+        },
+        "listingTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Snapshot title of the ordered listing"
+        },
+        "listingCategory": {
+          "type": "string",
+          "enum": ["apartment", "house", "land", "vehicle", "goods"],
+          "description": "Listing category"
+        },
+        "transactionType": {
+          "type": "string",
+          "enum": ["sale", "rent"],
+          "description": "Sale or rent"
+        },
+        "listingImage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180000,
+          "description": "Snapshot listing image URL or compressed JPEG data URL"
+        },
+        "sellerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Listing owner UID or showcase_system"
+        },
+        "sellerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Seller display name"
+        },
+        "buyerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Buyer Firebase Auth UID"
+        },
+        "buyerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Buyer full name"
+        },
+        "buyerPhone": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 30,
+          "description": "Buyer callback phone number"
+        },
+        "deliveryAddress": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 200,
+          "description": "Delivery or inspection meeting location"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["cash_on_delivery", "bank_transfer", "telebirr", "inspection_escrow"],
+          "description": "Selected settlement method"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Order quantity"
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Unit price at order time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total order value"
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["ETB", "USD"],
+          "description": "Currency code"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Optional buyer instructions"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "completed", "cancelled"],
+          "description": "Order fulfillment status"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "orderNumber",
+        "listingId",
+        "listingTitle",
+        "listingCategory",
+        "transactionType",
+        "listingImage",
+        "sellerId",
+        "sellerName",
+        "buyerId",
+        "buyerName",
+        "buyerPhone",
+        "deliveryAddress",
+        "paymentMethod",
+        "quantity",
+        "unitPrice",
+        "totalAmount",
+        "currency",
+        "notes",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BuyerRequest": {
+      "title": "BuyerRequest",
+      "description": "Publicly browsable buyer wanted request for properties, land, vehicles, or goods (no PII).",
+      "type": "object",
+      "properties": {
+        "buyerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Buyer Firebase Auth UID"
+        },
+        "buyerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Public buyer display name"
+        },
+        "transactionType": {
+          "type": "string",
+          "enum": ["sale", "rent"],
+          "description": "Whether buyer wants to buy (sale) or rent"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["apartment", "house", "land", "vehicle", "goods"],
+          "description": "Requested item category"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120,
+          "description": "What the buyer is looking for"
+        },
+        "maxBudget": {
+          "type": "number",
+          "description": "Maximum target budget"
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["ETB", "USD"],
+          "description": "Budget currency"
+        },
+        "preferredNeighborhood": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Preferred neighborhood or city"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Additional buyer criteria"
+        },
+        "roomClass": {
+          "type": "string",
+          "enum": ["1_class", "2_class", "3_plus"],
+          "description": "Optional preferred rental room class"
+        },
+        "tenantPreference": {
+          "type": "string",
+          "enum": ["late", "bale_tedar", "any"],
+          "description": "Optional renter household profile (Late / Bale Tedar)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "fulfilled", "closed"],
+          "description": "Request status"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "buyerId",
+        "buyerName",
+        "transactionType",
+        "category",
+        "title",
+        "maxBudget",
+        "currency",
+        "preferredNeighborhood",
+        "notes",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ContactEntry": {
+      "title": "ContactEntry",
+      "description": "Private phone submission from sellers and buyers, readable exclusively by the verified platform admin.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Submitting user Firebase Auth UID"
+        },
+        "userName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name of the seller or buyer"
+        },
+        "userEmail": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 150,
+          "description": "Verified account email"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["seller", "buyer"],
+          "description": "Whether the user submitted as a seller or buyer"
+        },
+        "actionType": {
+          "type": "string",
+          "enum": ["listing_post", "order", "inquiry", "buyer_request"],
+          "description": "Marketplace action that captured this phone number"
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 30,
+          "description": "Private phone number visible only to platform admin"
+        },
+        "listingId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Optional related listing or request ID"
+        },
+        "listingTitle": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Related listing or buyer request headline"
+        },
+        "neighborhood": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Related neighborhood or location"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "userEmail",
+        "role",
+        "actionType",
+        "phone",
+        "listingId",
+        "listingTitle",
+        "neighborhood",
+        "createdAt"
+      ]
+    },
+    "ListingPhoto": {
+      "title": "ListingPhoto",
+      "description": "Individual angle photo (up to 6 per listing) captured or uploaded by the seller or lessor.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent listing ID"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent listing owner Firebase Auth UID"
+        },
+        "slotIndex": {
+          "type": "integer",
+          "description": "Zero-based angle slot index (0 to 5)"
+        },
+        "angleLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Descriptive angle label such as Front View or Interior"
+        },
+        "imageDataUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200000,
+          "description": "Compressed JPEG data URL or image URL for this angle"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "listingId",
+        "ownerId",
+        "slotIndex",
+        "angleLabel",
+        "imageDataUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Real-time order notification delivered to sellers, buyers, and verified admin.",
+      "type": "object",
+      "properties": {
+        "recipientId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Recipient Firebase Auth UID or showcase_system"
+        },
+        "actorId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Actor Firebase Auth UID who triggered the order event"
+        },
+        "actorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name of the buyer or seller who triggered the notification"
+        },
+        "orderId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Backing Order document ID"
+        },
+        "orderNumber": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 32,
+          "description": "Human-readable order confirmation number"
+        },
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Ordered listing ID"
+        },
+        "listingTitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Listing headline snapshot"
+        },
+        "eventType": {
+          "type": "string",
+          "enum": ["order_placed", "order_confirmed", "order_completed", "order_cancelled"],
+          "description": "Order lifecycle notification event type"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Order total amount at event time"
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["ETB", "USD"],
+          "description": "Currency code"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Whether the recipient has read this notification"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "recipientId",
+        "actorId",
+        "actorName",
+        "orderId",
+        "orderNumber",
+        "listingId",
+        "listingTitle",
+        "eventType",
+        "amount",
+        "currency",
+        "isRead",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublicProfile" },
+      "description": "Public seller display profile (no PII)."
+    },
+    "/users/{userId}/private/info": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Owner-only PII record containing email and phone."
+    },
+    "/users/{userId}/saved/{listingId}": {
+      "schema": { "$ref": "#/entities/SavedItem" },
+      "description": "Owner-only saved/bookmarked listing references."
+    },
+    "/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/Listing" },
+      "description": "Marketplace listings across apartments, houses, land, vehicles, and goods."
+    },
+    "/listings/{listingId}/photos/{photoId}": {
+      "schema": { "$ref": "#/entities/ListingPhoto" },
+      "description": "Up to 6 angle photos captured or uploaded for each marketplace listing."
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/Inquiry" },
+      "description": "Private connection messages between buyers/renters and sellers."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Private buyer orders and rental bookings linked to listings."
+    },
+    "/buyerRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/BuyerRequest" },
+      "description": "Buyer wanted requests published from Buyer Studio."
+    },
+    "/contactDirectory/{contactId}": {
+      "schema": { "$ref": "#/entities/ContactEntry" },
+      "description": "Admin-only phone directory capturing seller and buyer phone submissions."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "Order notifications delivered in real time to sellers, buyers, and admin."
+    }
+  }
+}
