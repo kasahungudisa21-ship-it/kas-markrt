@@ -1,12 +1,9 @@
 {
-  "projectId": "gen-lang-client-0104813337",
-  "appId": "1:987209607127:web:d91c8410d54940f265cd92",
-  "apiKey": "AIzaSyBl8hIWCAulO5-cmsNIRypvi8GADz2GTcw",
-  "authDomain": "gen-lang-client-0104813337.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-21db4993-5b9b-4033-ad6d-16b14c7f8daa",
-  "storageBucket": "gen-lang-client-0104813337.firebasestorage.app",
-  "messagingSenderId": "987209607127",
-  "measurementId": "",
-  "oAuthClientId": "987209607127-ghrjje7v1ljo70ingdnvq3pid6auoq8a.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "apiKey": "AIzaSyDimDNmCt5aI7Yh1VivF9qquBo6nIHLJYI",
+  "authDomain": "kas-market.firebaseapp.com",
+  "projectId": "kas-market",
+  "storageBucket": "kas-market.firebasestorage.app",
+  "messagingSenderId": "235389204932",
+  "appId": "1:235389204932:web:f4f29e8b60bbf6cc964c91",
+  "measurementId": "G-37LCCP0RG6"
 }
