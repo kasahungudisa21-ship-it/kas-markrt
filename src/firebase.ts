@@ -73,9 +73,11 @@ const activeFirebaseConfig = hasEnvFirebaseConfig
     }
   : firebaseConfig;
 
+const configWithOptionalDb = firebaseConfig as { firestoreDatabaseId?: string };
+
 const activeDatabaseId = hasEnvFirebaseConfig
   ? (import.meta.env.VITE_FIREBASE_DATABASE_ID || '').trim()
-  : firebaseConfig.firestoreDatabaseId;
+  : (configWithOptionalDb.firestoreDatabaseId || '').trim();
 
 const app = initializeApp(activeFirebaseConfig);
 export const db = activeDatabaseId ? getFirestore(app, activeDatabaseId) : getFirestore(app);
@@ -558,7 +560,11 @@ export async function createListing(user: User, input: ListingInput): Promise<st
   }
 
   const cleanPhotos = sanitizeListingPhotos(input.photos, input.imageUrl);
-  const coverUrl = (cleanPhotos[0]?.imageDataUrl || input.imageUrl).trim().slice(0, 180000);
+  const rawCoverUrl = (cleanPhotos[0]?.imageDataUrl || input.imageUrl).trim();
+  const coverUrl = rawCoverUrl.startsWith('data:') ? rawCoverUrl : rawCoverUrl.slice(0, 180000);
+  if (coverUrl.length > 180000) {
+    throw new Error('Cover photo is too large. Please upload a smaller photo.');
+  }
   const photoCount = Math.min(6, Math.max(1, cleanPhotos.length));
   const cleanVoiceUrl = (input.descriptionVoiceUrl || '').trim().slice(0, 220000);
   const cleanVoiceDuration = cleanVoiceUrl
@@ -645,7 +651,11 @@ export async function updateListingDetails(
   const cleanPhotos = hasPhotosUpdate
     ? sanitizeListingPhotos(input.photos, input.imageUrl)
     : [];
-  const coverUrl = (cleanPhotos[0]?.imageDataUrl || input.imageUrl).trim().slice(0, 180000);
+  const rawCoverUrl = (cleanPhotos[0]?.imageDataUrl || input.imageUrl).trim();
+  const coverUrl = rawCoverUrl.startsWith('data:') ? rawCoverUrl : rawCoverUrl.slice(0, 180000);
+  if (coverUrl.length > 180000) {
+    throw new Error('Cover photo is too large. Please upload a smaller photo.');
+  }
 
   try {
     const existingPhotoSnap =

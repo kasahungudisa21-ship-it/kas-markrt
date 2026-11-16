@@ -113,7 +113,6 @@ export function ListingDetailModal({
     }
 
     setGalleryPhotos(fallback);
-    if (listing.isShowcase) return;
 
     let cancelled = false;
     fetchListingPhotos(listing.id)
@@ -231,7 +230,7 @@ export function ListingDetailModal({
       onRequireSignIn();
       return;
     }
-    if (listing.isShowcase || isOwner) return;
+    if (isOwner) return;
 
     const cleanName = (senderName || user.displayName || user.email?.split('@')[0] || '').trim();
     const cleanContact = senderContact.trim();
@@ -419,7 +418,6 @@ export function ListingDetailModal({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2 text-xs text-zinc-500">
                   <span>{statusLabel}</span>
-                  {listing.isShowcase && <span>{t.showcaseBadge}</span>}
                 </div>
                 <h2
                   id="listing-detail-title"
@@ -678,8 +676,6 @@ export function ListingDetailModal({
                       </button>
                     </form>
                   )
-                ) : listing.isShowcase ? (
-                  <p className="text-xs leading-relaxed text-zinc-600">{t.showcaseNotice}</p>
                 ) : !user ? (
                   <div className="space-y-3">
                     <p className="text-xs leading-relaxed text-zinc-600">{t.signInToConnect}</p>

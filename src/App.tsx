@@ -10,7 +10,7 @@ import { ListingFormModal } from './components/ListingFormModal';
 import { Navbar, NavSection } from './components/Navbar';
 import { ResilientImage } from './components/ResilientImage';
 import { SellView } from './components/SellView';
-import { HERO_IMAGE, NEIGHBORHOOD_OPTIONS, SHOWCASE_LISTINGS } from './data/showcaseListings';
+import { HERO_IMAGE, NEIGHBORHOOD_OPTIONS } from './data/showcaseListings';
 import {
   auth,
   getMySavedPhone,
@@ -44,7 +44,7 @@ import {
   RoomClass,
   TransactionType,
 } from './types';
-import { formatPrice } from './utils/format';
+import { formatFirestoreUserError, formatPrice } from './utils/format';
 import { playOrderChime, showBrowserOrderNotification } from './utils/notifications';
 
 type CategoryFilter = 'all' | 'properties' | ListingCategory;
@@ -70,16 +70,6 @@ export default function App() {
   const [listingsLoaded, setListingsLoaded] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [localSavedIds, setLocalSavedIds] = useState<Set<string>>(new Set());
-  const [deletedShowcaseIds, setDeletedShowcaseIds] = useState<Set<string>>(() => {
-    try {
-      const raw = window.localStorage.getItem('kas_market_deleted_showcase_ids');
-      if (!raw) return new Set();
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? new Set(parsed.filter((x) => typeof x === 'string')) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [buyerRequests, setBuyerRequests] = useState<BuyerRequest[]>([]);
@@ -136,7 +126,7 @@ export default function App() {
       },
       (err) => {
         setListingsLoaded(true);
-        setDataError(err.message);
+        setDataError(formatFirestoreUserError(err, langRef.current));
       }
     );
     const unsubRequests = subscribeBuyerRequests(
@@ -271,10 +261,7 @@ export default function App() {
     };
   }, [authReady, user, isAdmin]);
 
-  const combinedListings = useMemo(() => {
-    const visibleShowcase = SHOWCASE_LISTINGS.filter((item) => !deletedShowcaseIds.has(item.id));
-    return [...firestoreListings, ...visibleShowcase];
-  }, [firestoreListings, deletedShowcaseIds]);
+  const combinedListings = firestoreListings;
 
   const myListings = useMemo(() => {
     if (!user) return [];
@@ -418,23 +405,7 @@ export default function App() {
   };
 
   const handleDeleteListing = async (listing: Listing) => {
-    if (listing.isShowcase) {
-      setDeletedShowcaseIds((prev) => {
-        const next = new Set(prev);
-        next.add(listing.id);
-        try {
-          window.localStorage.setItem(
-            'kas_market_deleted_showcase_ids',
-            JSON.stringify(Array.from(next))
-          );
-        } catch {
-          // Ignore storage quota errors
-        }
-        return next;
-      });
-    } else {
-      await removeListing(listing.id);
-    }
+    await removeListing(listing.id);
 
     if (selectedListing?.id === listing.id) {
       setSelectedListing(null);
@@ -981,14 +952,30 @@ export default function App() {
                 </div>
               ) : filteredListings.length === 0 ? (
                 <div className="bg-white border border-zinc-200 rounded-xl p-12 text-center space-y-4">
-                  <p className="text-sm text-zinc-600">{t.noListingsFound}</p>
-                  <button
-                    type="button"
-                    onClick={handleResetFilters}
-                    className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800"
-                  >
-                    {t.resetFilters}
-                  </button>
+                  <p className="text-sm text-zinc-600">
+                    {firestoreListings.length === 0
+                      ? lang === 'am'
+                        ? 'እስካሁን የተለጠፈ ማስታወቂያ የለም። የመጀመሪያውን ትክክለኛ ማስታወቂያ ይለጥፉ!'
+                        : 'No listings posted yet. Be the first to publish a real listing on Kas Market.'
+                      : t.noListingsFound}
+                  </p>
+                  {firestoreListings.length === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setActiveNav('sell')}
+                      className="px-5 py-2.5 rounded-lg bg-emerald-800 text-white text-xs font-medium hover:bg-emerald-900"
+                    >
+                      {t.postListing}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800"
+                    >
+                      {t.resetFilters}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

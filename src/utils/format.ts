@@ -66,3 +66,44 @@ export function formatSpecsLine(listing: Listing, lang: Language): string {
 
   return parts.join(' · ') || `${listing.neighborhood} · ${listing.city}`;
 }
+
+export function formatFirestoreUserError(err: unknown, lang: Language): string {
+  const raw = err instanceof Error ? err.message : String(err || '');
+  let message = raw;
+  try {
+    const parsed = JSON.parse(raw) as { error?: string };
+    if (parsed && typeof parsed.error === 'string') {
+      message = parsed.error;
+    }
+  } catch {
+    // Not JSON
+  }
+
+  const lower = message.toLowerCase();
+  if (
+    lower.includes('cloud firestore api has not been used') ||
+    lower.includes('service_disabled') ||
+    lower.includes('database') && lower.includes('does not exist')
+  ) {
+    return lang === 'am'
+      ? 'የ Firebase Firestore ዳታቤዝ በፕሮጀክቱ ውስጥ አልተከፈተም። Firebase Console -> Firestore Database -> Create database በመክፈት ያብሩት።'
+      : 'Firestore Database is not created/enabled in this Firebase project yet. Open Firebase Console -> Firestore Database -> Create database.';
+  }
+
+  if (
+    lower.includes('permission-denied') ||
+    lower.includes('missing or insufficient permissions')
+  ) {
+    return lang === 'am'
+      ? 'የዳታቤዝ ፍቃድ ተከልክሏል። በGoogle መግባትዎን እና Firebase Console -> Firestore Database -> Rules ውስጥ የfirestore.rules ህግ መታተሙን (Publish) ያረጋግጡ።'
+      : 'Database permission denied. Ensure you are signed in with Google and that firestore.rules is published in Firebase Console -> Firestore Database -> Rules.';
+  }
+
+  if (lower.includes('offline') || lower.includes('network') || lower.includes('unavailable')) {
+    return lang === 'am'
+      ? 'ከዳታቤዙ ጋር መገናኘት አልተቻለም። የኢንተርኔት ግንኙነትዎን ያረጋግጡ።'
+      : 'Unable to reach the database right now. Please check your internet connection and try again.';
+  }
+
+  return message || (lang === 'am' ? 'ስህተት ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።' : 'Something went wrong. Please try again.');
+}

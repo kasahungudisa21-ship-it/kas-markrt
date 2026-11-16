@@ -1,44 +1,50 @@
+import heroModernAddis from '../assets/images/hero_modern_addis_residence_1794645758546.jpg';
+import listingApartmentBole from '../assets/images/listing_apartment_bole_1794645758334.jpg';
+import listingCarSuv from '../assets/images/listing_car_suv_1794645760395.jpg';
+import listingGoodsFurniture from '../assets/images/listing_goods_furniture_1794645760516.jpg';
+import listingLandPlot from '../assets/images/listing_land_plot_1794645759864.jpg';
+import listingVillaOldAirport from '../assets/images/listing_villa_old_airport_1794645759376.jpg';
 import { Listing, ListingCategory } from '../types';
 
-export const HERO_IMAGE = '/src/assets/images/hero_modern_addis_residence_1794645758546.jpg';
+export const HERO_IMAGE = heroModernAddis;
 
 export const CATEGORY_PRESET_IMAGES: Record<ListingCategory, { label: string; url: string }[]> = {
   apartment: [
     {
       label: 'Contemporary Penthouse Living',
-      url: '/src/assets/images/listing_apartment_bole_1794645758334.jpg',
+      url: listingApartmentBole,
     },
     {
       label: 'Modern Residence Facade',
-      url: '/src/assets/images/hero_modern_addis_residence_1794645758546.jpg',
+      url: heroModernAddis,
     },
   ],
   house: [
     {
       label: 'Two-Story Family Villa',
-      url: '/src/assets/images/listing_villa_old_airport_1794645759376.jpg',
+      url: listingVillaOldAirport,
     },
     {
       label: 'Courtyard Residence',
-      url: '/src/assets/images/hero_modern_addis_residence_1794645758546.jpg',
+      url: heroModernAddis,
     },
   ],
   land: [
     {
       label: 'Surveyed Residential Plot',
-      url: '/src/assets/images/listing_land_plot_1794645759864.jpg',
+      url: listingLandPlot,
     },
   ],
   vehicle: [
     {
       label: 'Hybrid Compact SUV',
-      url: '/src/assets/images/listing_car_suv_1794645760395.jpg',
+      url: listingCarSuv,
     },
   ],
   goods: [
     {
       label: 'Furniture & Espresso Studio',
-      url: '/src/assets/images/listing_goods_furniture_1794645760516.jpg',
+      url: listingGoodsFurniture,
     },
   ],
 };
@@ -55,211 +61,4 @@ export const NEIGHBORHOOD_OPTIONS = [
   'Piassa',
 ];
 
-export const SHOWCASE_LISTINGS: Listing[] = [
-  {
-    id: 'showcase_apt_bole_01',
-    ownerId: 'showcase_system',
-    sellerName: 'Dawit Bekele',
-    category: 'apartment',
-    transactionType: 'rent',
-    title: '3-Bedroom Sunlit Penthouse Apartment in Bole',
-    description:
-      'Floor-to-ceiling city views near Bole Medhanialem. Features an open oak kitchen, backup generator, high-speed fiber readiness, 24/7 security, and dedicated underground parking.',
-    price: 95000,
-    currency: 'ETB',
-    pricePeriod: 'monthly',
-    neighborhood: 'Bole',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/listing_apartment_bole_1794645758334.jpg',
-    status: 'available',
-    specs: {
-      bedrooms: 3,
-      bathrooms: 2,
-      areaSqm: 175,
-      roomClass: '3_plus',
-      tenantPreference: 'bale_tedar',
-    },
-    createdAtMs: 1794645000000,
-    updatedAtMs: 1794645000000,
-    isShowcase: true,
-  },
-  {
-    id: 'showcase_house_oldairport_02',
-    ownerId: 'showcase_system',
-    sellerName: 'Selamawit Tadesse',
-    category: 'house',
-    transactionType: 'sale',
-    title: 'Modern G+1 Family Villa with Landscaped Compound',
-    description:
-      'Architect-designed two-story residence in a quiet Old Airport cul-de-sac. Includes 4 en-suite bedrooms, service quarters, stone-paved driveway for 4 vehicles, and clean digital carta.',
-    price: 42500000,
-    currency: 'ETB',
-    pricePeriod: 'total',
-    neighborhood: 'Old Airport',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/listing_villa_old_airport_1794645759376.jpg',
-    status: 'available',
-    specs: {
-      bedrooms: 4,
-      bathrooms: 4,
-      areaSqm: 420,
-      titleDeed: 'Digital Carta',
-    },
-    createdAtMs: 1794644000000,
-    updatedAtMs: 1794644000000,
-    isShowcase: true,
-  },
-  {
-    id: 'showcase_land_cmc_03',
-    ownerId: 'showcase_system',
-    sellerName: 'Yonas Haile',
-    category: 'land',
-    transactionType: 'sale',
-    title: '500 m² Corner Residential Plot Near CMC Ring Road',
-    description:
-      'Level corner land parcel with asphalt access on two sides, water and three-phase electricity lines ready on boundary. Ideal for private residence or boutique G+3 apartment build.',
-    price: 24000000,
-    currency: 'ETB',
-    pricePeriod: 'total',
-    neighborhood: 'CMC',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/listing_land_plot_1794645759864.jpg',
-    status: 'available',
-    specs: {
-      areaSqm: 500,
-      titleDeed: 'Verified Lease Carta',
-    },
-    createdAtMs: 1794643000000,
-    updatedAtMs: 1794643000000,
-    isShowcase: true,
-  },
-  {
-    id: 'showcase_car_rav4_04',
-    ownerId: 'showcase_system',
-    sellerName: 'Bereket Alemu',
-    category: 'vehicle',
-    transactionType: 'sale',
-    title: '2024 Toyota RAV4 Hybrid AWD — Duty Paid',
-    description:
-      'Single-owner silver hybrid compact SUV with full service history, panoramic roof, adaptive cruise control, and pristine interior. Plate AA 2 B-series, ready for immediate transfer.',
-    price: 8400000,
-    currency: 'ETB',
-    pricePeriod: 'total',
-    neighborhood: 'Kazanchis',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/listing_car_suv_1794645760395.jpg',
-    status: 'available',
-    specs: {
-      vehicleYear: 2024,
-      mileageKm: 14200,
-      transmission: 'Automatic',
-      fuelType: 'Hybrid',
-    },
-    createdAtMs: 1794642000000,
-    updatedAtMs: 1794642000000,
-    isShowcase: true,
-  },
-  {
-    id: 'showcase_apt_sarbet_05',
-    ownerId: 'showcase_system',
-    sellerName: 'Hanna Girma',
-    category: 'apartment',
-    transactionType: 'sale',
-    title: '2-Bedroom Finished Apartment in Sarbet Residence',
-    description:
-      'Bright fifth-floor apartment ready for occupancy or immediate rental yield. High-grade European fixtures, balcony overlooking greenery, elevator, and reserved basement parking.',
-    price: 16800000,
-    currency: 'ETB',
-    pricePeriod: 'total',
-    neighborhood: 'Sarbet',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/hero_modern_addis_residence_1794645758546.jpg',
-    status: 'available',
-    specs: {
-      bedrooms: 2,
-      bathrooms: 2,
-      areaSqm: 128,
-      titleDeed: 'Individual Title',
-    },
-    createdAtMs: 1794641000000,
-    updatedAtMs: 1794641000000,
-    isShowcase: true,
-  },
-  {
-    id: 'showcase_goods_studio_06',
-    ownerId: 'showcase_system',
-    sellerName: 'Mekdes Solomon',
-    category: 'goods',
-    transactionType: 'sale',
-    title: 'Commercial Espresso Machine & Solid Walnut Lounge Set',
-    description:
-      'Lightly used Italian single-group stainless espresso machine paired with two handcrafted walnut and charcoal wool lounge chairs. Available individually or as a complete cafe studio bundle.',
-    price: 385000,
-    currency: 'ETB',
-    pricePeriod: 'total',
-    neighborhood: 'Bole',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/listing_goods_furniture_1794645760516.jpg',
-    status: 'available',
-    specs: {
-      itemCondition: 'Like New',
-    },
-    createdAtMs: 1794640000000,
-    updatedAtMs: 1794640000000,
-    isShowcase: true,
-  },
-  {
-    id: 'showcase_house_1class_late_07',
-    ownerId: 'showcase_system',
-    sellerName: 'Tigist Alemayehu',
-    category: 'house',
-    transactionType: 'rent',
-    title: '1-Class Quiet Service House for Rent (Late / Single)',
-    description:
-      'Clean private 1-class ground unit with en-suite shower, kitchenette corner, 24-hour water reservoir, and gated courtyard access near CMC Michael. Preferred for single working tenant (Late).',
-    price: 12000,
-    currency: 'ETB',
-    pricePeriod: 'monthly',
-    neighborhood: 'CMC',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/listing_villa_old_airport_1794645759376.jpg',
-    status: 'available',
-    specs: {
-      bedrooms: 1,
-      bathrooms: 1,
-      areaSqm: 38,
-      roomClass: '1_class',
-      tenantPreference: 'late',
-    },
-    createdAtMs: 1794644500000,
-    updatedAtMs: 1794644500000,
-    isShowcase: true,
-  },
-  {
-    id: 'showcase_apt_2class_tedar_08',
-    ownerId: 'showcase_system',
-    sellerName: 'Abel Tesfaye',
-    category: 'house',
-    transactionType: 'rent',
-    title: '2-Class Compound House for Rent (Bale Tedar / Married)',
-    description:
-      'Spacious 2-class ground residence with living room, separate bedroom, private kitchen, and parking space in a peaceful family compound in Lebu. Preferred for married couple or small family (Bale Tedar).',
-    price: 24000,
-    currency: 'ETB',
-    pricePeriod: 'monthly',
-    neighborhood: 'Lebu',
-    city: 'Addis Ababa',
-    imageUrl: '/src/assets/images/hero_modern_addis_residence_1794645758546.jpg',
-    status: 'available',
-    specs: {
-      bedrooms: 2,
-      bathrooms: 1,
-      areaSqm: 78,
-      roomClass: '2_class',
-      tenantPreference: 'bale_tedar',
-    },
-    createdAtMs: 1794644200000,
-    updatedAtMs: 1794644200000,
-    isShowcase: true,
-  },
-];
+export const SHOWCASE_LISTINGS: Listing[] = [];

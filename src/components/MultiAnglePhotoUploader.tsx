@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, RefreshCw, Sparkles, Star, Trash2, Upload, X } from 'lucide-react';
-import { CATEGORY_PRESET_IMAGES } from '../data/showcaseListings';
+import { Camera, RefreshCw, Star, Trash2, Upload, X } from 'lucide-react';
 import { translations } from '../i18n';
 import { Language, ListingCategory, ListingPhoto } from '../types';
 import {
@@ -51,6 +50,7 @@ export function MultiAnglePhotoUploader({
   const [cameraSlot, setCameraSlot] = useState<number | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraUnavailable, setCameraUnavailable] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -69,19 +69,18 @@ export function MultiAnglePhotoUploader({
   useEffect(() => {
     if (cameraSlot === null) {
       stopCameraStream();
+      setCameraUnavailable(false);
       return;
     }
 
     let cancelled = false;
     setCameraReady(false);
+    setCameraUnavailable(false);
 
     async function startStream() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        const targetSlot = cameraSlot;
-        setCameraSlot(null);
-        setUploadError(t.cameraPermissionFallback);
-        if (targetSlot !== null) {
-          slotCaptureRefs.current[targetSlot]?.click();
+        if (!cancelled) {
+          setCameraUnavailable(true);
         }
         return;
       }
@@ -104,12 +103,7 @@ export function MultiAnglePhotoUploader({
         }
       } catch {
         if (!cancelled) {
-          const targetSlot = cameraSlot;
-          setCameraSlot(null);
-          setUploadError(t.cameraPermissionFallback);
-          if (targetSlot !== null) {
-            slotCaptureRefs.current[targetSlot]?.click();
-          }
+          setCameraUnavailable(true);
         }
       }
     }
@@ -120,7 +114,7 @@ export function MultiAnglePhotoUploader({
       cancelled = true;
       stopCameraStream();
     };
-  }, [cameraSlot, facingMode, t.cameraPermissionFallback]);
+  }, [cameraSlot, facingMode]);
 
   const filledCount = slots.filter(Boolean).length;
 
@@ -215,31 +209,6 @@ export function MultiAnglePhotoUploader({
     onChangeSlots(next);
   };
 
-  const handleFillWithSample = () => {
-    const presets = CATEGORY_PRESET_IMAGES[category] || [];
-    const fallbackPool = [
-      ...presets,
-      ...CATEGORY_PRESET_IMAGES.apartment,
-      ...CATEGORY_PRESET_IMAGES.house,
-      ...CATEGORY_PRESET_IMAGES.goods,
-    ];
-    const next = [...slots];
-    for (let i = 0; i < 6; i += 1) {
-      if (!next[i]) {
-        const preset = fallbackPool[i % fallbackPool.length];
-        if (preset) {
-          next[i] = {
-            slotIndex: i,
-            angleLabel: anglePrompts[i] || preset.label,
-            imageDataUrl: preset.url,
-          };
-        }
-      }
-    }
-    onChangeSlots(next);
-    setUploadError('');
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -273,17 +242,6 @@ export function MultiAnglePhotoUploader({
             <Upload className="w-3.5 h-3.5 text-emerald-800" />
             <span>{t.uploadAllSixLabel}</span>
           </button>
-
-          {filledCount < 6 && (
-            <button
-              type="button"
-              onClick={handleFillWithSample}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-700 transition-colors whitespace-nowrap shrink-0"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
-              <span>{t.useSamplePhotosLabel}</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -460,14 +418,47 @@ export function MultiAnglePhotoUploader({
               </button>
             </div>
 
-            <div className="relative aspect-[4/3] w-full bg-black">
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                autoPlay
-                className="w-full h-full object-cover"
-              />
+            <div className="relative aspect-[4/3] w-full bg-black flex items-center justify-center">
+              {cameraUnavailable ? (
+                <div className="p-6 text-center space-y-4 max-w-sm">
+                  <Camera className="w-10 h-10 text-zinc-400 mx-auto" />
+                  <p className="text-xs text-zinc-300 leading-relaxed">{t.cameraPermissionFallback}</p>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = cameraSlot;
+                        setCameraSlot(null);
+                        slotCaptureRefs.current[target]?.click();
+                      }}
+                      className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium inline-flex items-center gap-1.5"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{t.takePhotoLabel}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = cameraSlot;
+                        setCameraSlot(null);
+                        slotFileRefs.current[target]?.click();
+                      }}
+                      className="px-4 py-2 rounded-lg border border-zinc-600 hover:bg-zinc-800 text-zinc-100 text-xs font-medium inline-flex items-center gap-1.5"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{t.uploadPhotoLabel}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  autoPlay
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
 
             <div className="p-4 flex items-center justify-between gap-3 bg-zinc-900 border-t border-zinc-800">

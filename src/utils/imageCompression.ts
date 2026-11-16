@@ -100,17 +100,22 @@ function encodeCanvasWithinBudget(
     { scale: 0.8, quality: 0.62 },
     { scale: 0.65, quality: 0.56 },
     { scale: 0.5, quality: 0.5 },
+    { scale: 0.38, quality: 0.46 },
+    { scale: 0.28, quality: 0.42 },
+    { scale: 0.2, quality: 0.38 },
   ];
 
   let lastResult = sourceCanvas.toDataURL('image/jpeg', 0.5);
   for (const attempt of attempts) {
-    const targetW = Math.max(160, Math.round(sourceCanvas.width * attempt.scale));
-    const targetH = Math.max(120, Math.round(sourceCanvas.height * attempt.scale));
+    const targetW = Math.max(120, Math.round(sourceCanvas.width * attempt.scale));
+    const targetH = Math.max(90, Math.round(sourceCanvas.height * attempt.scale));
     const workCanvas = document.createElement('canvas');
     workCanvas.width = targetW;
     workCanvas.height = targetH;
     const ctx = workCanvas.getContext('2d');
     if (!ctx) continue;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetW, targetH);
     ctx.drawImage(sourceCanvas, 0, 0, targetW, targetH);
     const dataUrl = workCanvas.toDataURL('image/jpeg', attempt.quality);
     lastResult = dataUrl;
@@ -121,18 +126,43 @@ function encodeCanvasWithinBudget(
   return lastResult;
 }
 
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error('Failed to decode image file.'));
+    el.src = src;
+  });
+}
+
+function readBlobAsDataUrl(file: File | Blob): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Unable to read image file.'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Unable to read image file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function compressImageFile(
   file: File | Blob,
-  maxChars = 140000
+  maxChars = 135000
 ): Promise<string> {
   const objectUrl = URL.createObjectURL(file);
+  let img: HTMLImageElement;
   try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error('Failed to decode image file.'));
-      el.src = objectUrl;
-    });
+    try {
+      img = await loadImageElement(objectUrl);
+    } catch {
+      const rawDataUrl = await readBlobAsDataUrl(file);
+      img = await loadImageElement(rawDataUrl);
+    }
 
     const maxDim = 760;
     const ratio = Math.min(1, maxDim / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
@@ -146,6 +176,8 @@ export async function compressImageFile(
     if (!ctx) {
       throw new Error('Canvas 2D context unavailable.');
     }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
     ctx.drawImage(img, 0, 0, width, height);
     return encodeCanvasWithinBudget(canvas, maxChars);
   } finally {
@@ -155,7 +187,7 @@ export async function compressImageFile(
 
 export function captureVideoFrameAsDataUrl(
   video: HTMLVideoElement,
-  maxChars = 140000
+  maxChars = 135000
 ): string {
   const vw = video.videoWidth || 640;
   const vh = video.videoHeight || 480;

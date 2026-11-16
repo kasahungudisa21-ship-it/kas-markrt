@@ -26,7 +26,7 @@ import {
   TenantPreference,
   TransactionType,
 } from '../types';
-import { formatPrice, formatSpecsLine } from '../utils/format';
+import { formatFirestoreUserError, formatPrice, formatSpecsLine } from '../utils/format';
 import {
   createEmptyPhotoSlots,
   MultiAnglePhotoUploader,
@@ -214,6 +214,22 @@ export function SellView({
       setErrorMsg(lang === 'am' ? 'ትክክለኛ ዋጋ ያስገቡ።' : 'Enter a valid price greater than 0.');
       return;
     }
+    if (neighborhood.trim().length < 2) {
+      setErrorMsg(
+        lang === 'am'
+          ? 'እባክዎ አካባቢውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
+          : 'Neighborhood must be at least 2 characters.'
+      );
+      return;
+    }
+    if (city.trim().length < 2) {
+      setErrorMsg(
+        lang === 'am'
+          ? 'እባክዎ ከተማውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
+          : 'City must be at least 2 characters.'
+      );
+      return;
+    }
     if (sellerPhone.trim().length < 6) {
       setErrorMsg(t.phoneValidationError);
       return;
@@ -252,7 +268,7 @@ export function SellView({
       setPhotoSlots(createEmptyPhotoSlots());
       setPublishedSuccess(true);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Unable to publish listing.');
+      setErrorMsg(formatFirestoreUserError(err, lang));
     } finally {
       setSubmitting(false);
     }
@@ -783,7 +799,11 @@ export function SellView({
                 />
               </div>
 
-              {errorMsg && <p className="text-xs text-red-700">{errorMsg}</p>}
+              {errorMsg && (
+                <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-xs text-red-800 leading-relaxed">
+                  {errorMsg}
+                </div>
+              )}
 
               <div className="pt-3 border-t border-zinc-200 flex items-center justify-end gap-3">
                 <button

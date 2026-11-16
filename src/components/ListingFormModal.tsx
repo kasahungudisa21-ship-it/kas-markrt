@@ -4,6 +4,7 @@ import { Lock, X } from 'lucide-react';
 import { NEIGHBORHOOD_OPTIONS } from '../data/showcaseListings';
 import { createListing, fetchListingPhotos, updateListingDetails } from '../firebase';
 import { translations } from '../i18n';
+import { formatFirestoreUserError } from '../utils/format';
 import {
   CurrencyCode,
   Language,
@@ -195,6 +196,22 @@ export function ListingFormModal({
       setErrorMsg(lang === 'am' ? 'ትክክለኛ ዋጋ ያስገቡ።' : 'Enter a valid price greater than 0.');
       return;
     }
+    if (neighborhood.trim().length < 2) {
+      setErrorMsg(
+        lang === 'am'
+          ? 'እባክዎ አካባቢውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
+          : 'Neighborhood must be at least 2 characters.'
+      );
+      return;
+    }
+    if (city.trim().length < 2) {
+      setErrorMsg(
+        lang === 'am'
+          ? 'እባክዎ ከተማውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
+          : 'City must be at least 2 characters.'
+      );
+      return;
+    }
     if (!editingListing && sellerPhone.trim().length < 6) {
       setErrorMsg(t.phoneValidationError);
       return;
@@ -255,7 +272,7 @@ export function ListingFormModal({
       onSuccess();
       onClose();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Unable to save listing.');
+      setErrorMsg(formatFirestoreUserError(err, lang));
     } finally {
       setSubmitting(false);
     }
