@@ -1,4 +1,4 @@
-export type ListingCategory = 'apartment' | 'house' | 'land' | 'vehicle' | 'goods';
+export type ListingCategory = 'apartment' | 'condominium' | 'house' | 'land' | 'vehicle' | 'goods';
 
 export type TransactionType = 'sale' | 'rent';
 

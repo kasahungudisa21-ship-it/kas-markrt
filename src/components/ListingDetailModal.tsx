@@ -297,21 +297,21 @@ export function ListingDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#071A15]/65 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-[#061712]/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="listing-detail-title"
     >
-      <div className="bg-[#FBF8F2] border border-[#CFC5B3] rounded-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 z-10 bg-[#0E362C] border-b border-[#215C4D] px-5 py-4 flex items-center justify-between gap-4 text-[#FCF9F2]">
-          <div className="text-xs font-medium text-amber-200 truncate">
+      <div className="bg-white border border-[#E5E0D6] rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-[0_28px_70px_-18px_rgba(7,26,21,0.45)]">
+        <div className="sticky top-0 z-10 bg-[#09261E] border-b border-[#18483B] px-6 py-4 flex items-center justify-between gap-4 text-[#FCF9F2]">
+          <div className="text-xs font-semibold tracking-wide text-amber-200 truncate">
             {categoryLabel} · {txLabel} · {listing.neighborhood}, {listing.city}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="min-w-[40px] min-h-[40px] rounded-lg border border-[#2C6F5E] bg-[#154A3D] flex items-center justify-center text-emerald-100 hover:text-white hover:bg-[#1C5E4E]"
+            className="min-w-[40px] min-h-[40px] rounded-xl border border-white/15 bg-white/10 flex items-center justify-center text-emerald-100 hover:text-white hover:bg-white/20 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -329,7 +329,7 @@ export function ListingDetailModal({
               const hasMultiple = galleryPhotos.length > 1;
               return (
                 <div className="space-y-3">
-                  <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200">
+                  <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-[#F4F1EA] border border-[#E5E0D6]">
                     <ResilientImage
                       src={activePhoto.imageDataUrl}
                       alt={`${listing.title} — ${activePhoto.angleLabel}`}
@@ -465,9 +465,9 @@ export function ListingDetailModal({
             </div>
 
             {specRows.length > 0 && (
-              <div className="pt-4 border-t border-[#DFD7C8]">
-                <h4 className="text-sm font-bold text-[#0F4C3A] mb-3">{t.specsHeading}</h4>
-                <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 bg-[#F2EDE2] p-4 rounded-xl border border-[#DFD7C8]">
+              <div className="pt-4 border-t border-[#EAE6DC]">
+                <h4 className="text-sm font-bold text-[#0B3B2E] mb-3">{t.specsHeading}</h4>
+                <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 bg-[#F7F5F0] p-4 rounded-2xl border border-[#E5E0D6]">
                   {specRows.map((row) => (
                     <div key={row.label}>
                       <dt className="text-xs text-[#6B5B45] font-medium">{row.label}</dt>
@@ -482,14 +482,14 @@ export function ListingDetailModal({
           </div>
 
           <div className="lg:col-span-5">
-            <div className="lg:sticky lg:top-20 bg-[#EFE9DC] border border-[#CFC5B3] rounded-xl p-5 sm:p-6 space-y-5 shadow-sm">
+            <div className="lg:sticky lg:top-20 bg-[#FAF8F4] border border-[#E5E0D6] rounded-2xl p-5 sm:p-6 space-y-5 shadow-[0_6px_24px_-12px_rgba(12,46,38,0.08)]">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2 text-xs font-semibold text-[#0F5E48]">
                   <span>{statusLabel}</span>
                 </div>
                 <h2
                   id="listing-detail-title"
-                  className="text-xl sm:text-2xl font-bold text-[#102620] leading-snug"
+                  className="text-xl sm:text-2xl font-bold text-[#102620] leading-snug tracking-tight"
                 >
                   {listing.title}
                 </h2>
@@ -554,15 +554,15 @@ export function ListingDetailModal({
                 </button>
               )}
 
-              <div className="pt-4 border-t border-zinc-200 space-y-4">
-                <div className="grid grid-cols-2 gap-1 p-1 bg-zinc-200/70 rounded-lg">
+              <div className="pt-4 border-t border-[#E5E0D6] space-y-4">
+                <div className="grid grid-cols-2 gap-1 p-1 bg-[#EAE6DC] rounded-xl">
                   <button
                     type="button"
                     onClick={() => setActiveTab('order')}
-                    className={`py-2 text-xs font-medium rounded-md transition-colors ${
+                    className={`py-2 text-xs font-semibold rounded-lg transition-colors ${
                       activeTab === 'order'
-                        ? 'bg-white text-zinc-900 shadow-sm'
-                        : 'text-zinc-600 hover:text-zinc-900'
+                        ? 'bg-white text-[#0F241E] shadow-sm'
+                        : 'text-[#4F615B] hover:text-[#0F241E]'
                     }`}
                   >
                     {t.placeOrderTab}
@@ -570,10 +570,10 @@ export function ListingDetailModal({
                   <button
                     type="button"
                     onClick={() => setActiveTab('message')}
-                    className={`py-2 text-xs font-medium rounded-md transition-colors ${
+                    className={`py-2 text-xs font-semibold rounded-lg transition-colors ${
                       activeTab === 'message'
-                        ? 'bg-white text-zinc-900 shadow-sm'
-                        : 'text-zinc-600 hover:text-zinc-900'
+                        ? 'bg-white text-[#0F241E] shadow-sm'
+                        : 'text-[#4F615B] hover:text-[#0F241E]'
                     }`}
                   >
                     {t.askSellerTab}

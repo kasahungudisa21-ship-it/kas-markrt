@@ -108,7 +108,7 @@ service cloud.firestore {
         ])
         && isValidId(data.ownerId)
         && data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80
-        && data.category in ['apartment', 'house', 'land', 'vehicle', 'goods']
+        && data.category in ['apartment', 'condominium', 'house', 'land', 'vehicle', 'goods']
         && data.transactionType in ['sale', 'rent']
         && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
         && data.description is string && data.description.size() <= 2000
@@ -219,7 +219,7 @@ service cloud.firestore {
         && data.orderNumber is string && data.orderNumber.size() >= 3 && data.orderNumber.size() <= 32
         && isValidId(data.listingId)
         && data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 120
-        && data.listingCategory in ['apartment', 'house', 'land', 'vehicle', 'goods']
+        && data.listingCategory in ['apartment', 'condominium', 'house', 'land', 'vehicle', 'goods']
         && data.transactionType in ['sale', 'rent']
         && data.listingImage is string && data.listingImage.size() >= 1 && data.listingImage.size() <= 180000
         && isValidId(data.sellerId)
@@ -253,7 +253,7 @@ service cloud.firestore {
         && isValidId(data.buyerId)
         && data.buyerName is string && data.buyerName.size() >= 1 && data.buyerName.size() <= 80
         && data.transactionType in ['sale', 'rent']
-        && data.category in ['apartment', 'house', 'land', 'vehicle', 'goods']
+        && data.category in ['apartment', 'condominium', 'house', 'land', 'vehicle', 'goods']
         && data.title is string && data.title.size() >= 3 && data.title.size() <= 120
         && data.maxBudget is number && data.maxBudget > 0 && data.maxBudget <= 10000000000
         && data.currency in ['ETB', 'USD']

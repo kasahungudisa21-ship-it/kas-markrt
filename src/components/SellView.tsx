@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import {
   ArrowLeft,
+  Building,
   Building2,
   Car,
   CheckCircle2,
@@ -125,6 +126,7 @@ export function SellView({
 
   const categoryTiles: { key: ListingCategory; label: string; Icon: typeof Building2 }[] = [
     { key: 'apartment', label: t.catApartment, Icon: Building2 },
+    { key: 'condominium', label: t.catCondominium, Icon: Building },
     { key: 'house', label: t.catHouse, Icon: Home },
     { key: 'land', label: t.catLand, Icon: MapPin },
     { key: 'vehicle', label: t.catVehicle, Icon: Car },
@@ -140,7 +142,7 @@ export function SellView({
 
   const buildSpecs = (): ListingSpecs => {
     const specs: ListingSpecs = {};
-    if (category === 'apartment' || category === 'house') {
+    if (category === 'apartment' || category === 'condominium' || category === 'house') {
       specs.bedrooms = Number(bedrooms) || 0;
       specs.bathrooms = Number(bathrooms) || 0;
       specs.areaSqm = Number(areaSqm) || 0;
@@ -179,6 +181,10 @@ export function SellView({
         ? '450 m² Residential Plot in CMC'
         : category === 'goods'
         ? 'Modern Solid Walnut Lounge Chair'
+        : category === 'condominium'
+        ? transactionType === 'rent'
+          ? '2-Bedroom Condominium for Rent in Ayat'
+          : '2-Bedroom Condominium for Sale in Jemo'
         : transactionType === 'rent'
         ? '3-Bedroom Sunlit Apartment for Rent in Bole'
         : '3-Bedroom Sunlit Apartment for Sale in Bole'),
@@ -292,27 +298,33 @@ export function SellView({
   };
 
   return (
-    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
-      <div className="rounded-2xl bg-gradient-to-r from-[#0D352C] via-[#13463B] to-[#163B4B] border border-[#225E4F] p-6 sm:p-7 text-[#FCF9F2] flex flex-col sm:flex-row sm:items-end justify-between gap-4 shadow-sm">
-        <div className="space-y-1.5">
+    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-7">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#092C23] via-[#0F3D32] to-[#133847] border border-[#1F5648] p-6 sm:p-8 text-[#FCF9F2] flex flex-col sm:flex-row sm:items-end justify-between gap-4 shadow-[0_14px_34px_-16px_rgba(9,44,35,0.35)]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-20 -right-12 w-72 h-72 rounded-full bg-emerald-400/10 blur-3xl"
+        />
+        <div className="relative space-y-2">
           <button
             type="button"
             onClick={onBackToBrowse}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{t.backToMarketplace}</span>
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#FCF8EE]">{t.sellerPageTitle}</h1>
-          <p className="text-sm text-[#CCE5DC] max-w-2xl">{t.sellerPageSubtitle}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#FCF8EE]">
+            {t.sellerPageTitle}
+          </h1>
+          <p className="text-sm text-[#CCE5DC] max-w-2xl leading-relaxed">{t.sellerPageSubtitle}</p>
         </div>
 
         {user && (
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="relative flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               type="button"
               onClick={onGoToOrders}
-              className="px-4 py-2 rounded-lg border border-amber-300/50 bg-[#185244] hover:bg-[#1E6352] text-xs font-semibold text-amber-200 whitespace-nowrap"
+              className="px-4 py-2 rounded-xl border border-amber-300/40 bg-white/10 hover:bg-white/20 text-xs font-semibold text-amber-200 whitespace-nowrap transition-colors"
             >
               {t.tabMyListings} ({myListings.length}) ·{' '}
               {isAdmin ? `${t.tabOrders} (${incomingOrdersCount})` : t.tabInbox}
@@ -321,7 +333,7 @@ export function SellView({
               <button
                 type="button"
                 onClick={onSignOut}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#2D6E5E] bg-[#144338] hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-emerald-100 transition-colors whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/15 bg-white/5 hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-emerald-100 transition-colors whitespace-nowrap shrink-0"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>{t.signOut}</span>
@@ -332,16 +344,16 @@ export function SellView({
       </div>
 
       {/* Step 1: Standalone Top Selector for For Sale vs For Rent */}
-      <div className="bg-[#FAF7F0] border border-[#D8D0C1] rounded-xl p-5 sm:p-6 space-y-3 shadow-sm">
+      <div className="bg-white border border-[#E5E0D6] rounded-2xl p-5 sm:p-6 space-y-3.5 shadow-[0_6px_24px_-12px_rgba(12,46,38,0.08)]">
         <h2 className="text-sm font-bold text-[#0F4C3A]">{t.chooseSaleOrRentLabel}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             type="button"
             onClick={() => handleTransactionChange('sale')}
-            className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
+            className={`p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               transactionType === 'sale'
-                ? 'border-[#9A3412] bg-[#FEF2E4] ring-2 ring-[#C2410C]/40'
-                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
+                ? 'border-[#C2410C] bg-[#FFF8F2] ring-2 ring-[#C2410C]/25 shadow-sm'
+                : 'border-[#E5E0D6] bg-[#FAF8F4] hover:bg-white hover:border-[#C9C1B2]'
             }`}
           >
             <div
@@ -363,10 +375,10 @@ export function SellView({
           <button
             type="button"
             onClick={() => handleTransactionChange('rent')}
-            className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
+            className={`p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               transactionType === 'rent'
-                ? 'border-[#1E40AF] bg-[#E8F1FC] ring-2 ring-[#2563EB]/40'
-                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
+                ? 'border-[#1D4ED8] bg-[#F4F8FF] ring-2 ring-[#2563EB]/25 shadow-sm'
+                : 'border-[#E5E0D6] bg-[#FAF8F4] hover:bg-white hover:border-[#C9C1B2]'
             }`}
           >
             <div
@@ -389,7 +401,7 @@ export function SellView({
 
       {/* Step 2: Directly Underneath — Enter What You Are Selling or Renting Out */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-7 bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-6 sm:p-8 shadow-sm">
+        <div className="lg:col-span-7 bg-white border border-[#E5E0D6] rounded-2xl p-6 sm:p-8 shadow-[0_6px_24px_-12px_rgba(12,46,38,0.08)]">
           {!user ? (
             <div className="py-10 text-center space-y-4">
               <p className="text-sm text-[#394D46] max-w-md mx-auto">{t.publishStarterPrompt}</p>
@@ -423,7 +435,7 @@ export function SellView({
                 <h2 className="text-sm font-bold text-[#0F4C3A]">
                   {transactionType === 'sale' ? t.whatSellingLabel : t.whatRentingLabel}
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                   {categoryTiles.map(({ key, label, Icon }) => {
                     const active = category === key;
                     const activeColors =
@@ -433,6 +445,8 @@ export function SellView({
                         ? 'border-[#1D4ED8] bg-[#E5F0FC] text-[#142F66]'
                         : key === 'goods'
                         ? 'border-[#9D174D] bg-[#F8EAF2] text-[#591432]'
+                        : key === 'condominium'
+                        ? 'border-[#0F766E] bg-[#E0F4F1] text-[#0D4D47]'
                         : 'border-[#0F5E48] bg-[#E3F5EE] text-[#0B3B2E]';
                     const iconColor =
                       key === 'land'
@@ -441,16 +455,18 @@ export function SellView({
                         ? 'text-[#1D4ED8]'
                         : key === 'goods'
                         ? 'text-[#9D174D]'
+                        : key === 'condominium'
+                        ? 'text-[#0F766E]'
                         : 'text-[#0F5E48]';
                     return (
                       <button
                         key={key}
                         type="button"
                         onClick={() => handleCategoryChange(key)}
-                        className={`p-3 rounded-lg border text-left transition-colors flex flex-col gap-1.5 ${
+                        className={`p-3 rounded-xl border text-left transition-colors flex flex-col gap-1.5 ${
                           active
                             ? `${activeColors} font-semibold shadow-sm`
-                            : 'border-[#D8D0C1] bg-[#F7F3EA] text-[#2F423B] hover:bg-[#EFE9DC]'
+                            : 'border-[#E5E0D6] bg-[#F7F5F0] text-[#2F423B] hover:bg-[#EFECE4]'
                         }`}
                       >
                         <Icon className={`w-4 h-4 ${active ? iconColor : 'text-[#5A6B65]'}`} />
@@ -482,6 +498,10 @@ export function SellView({
                       ? '500 m² Corner Plot in CMC'
                       : category === 'goods'
                       ? 'Solid Walnut Lounge Chair & Espresso Machine'
+                      : category === 'condominium'
+                      ? transactionType === 'rent'
+                        ? '2-Bedroom Condominium for Rent in Ayat'
+                        : '2-Bedroom Condominium for Sale in Jemo'
                       : transactionType === 'rent'
                       ? '3-Bedroom Apartment for Rent in Bole'
                       : '3-Bedroom Apartment for Sale in Bole'
@@ -592,7 +612,7 @@ export function SellView({
                 </p>
               </div>
 
-              {(category === 'apartment' || category === 'house') && (
+              {(category === 'apartment' || category === 'condominium' || category === 'house') && (
                 <div className="space-y-4 pt-1">
                   <div className="p-4 rounded-xl bg-[#E8F3EE] border border-[#B7DACA] space-y-4">
                     <div className="text-xs font-bold text-[#0B3B2E]">
@@ -896,8 +916,8 @@ export function SellView({
           <div className="text-xs font-bold uppercase tracking-wider text-[#9A3412]">
             {t.livePreviewLabel}
           </div>
-          <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl overflow-hidden shadow-sm">
-            <div className="relative aspect-[4/3] w-full bg-[#E6DFD1]">
+          <div className="bg-white border border-[#E5E0D6] rounded-2xl overflow-hidden shadow-[0_12px_32px_-16px_rgba(10,40,32,0.14)]">
+            <div className="relative aspect-[4/3] w-full bg-[#EFECE4]">
               <ResilientImage
                 src={previewListing.imageUrl}
                 alt={previewListing.title}

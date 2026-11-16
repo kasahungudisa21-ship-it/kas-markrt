@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Building2, Car, Home, MapPin, Package } from 'lucide-react';
+import { Building, Building2, Car, Home, MapPin, Package } from 'lucide-react';
 import { ListingCategory } from '../types';
 
 interface ResilientImageProps {
@@ -20,6 +20,8 @@ export function ResilientImage({ src, alt, category, className = '' }: Resilient
     const Icon =
       category === 'apartment'
         ? Building2
+        : category === 'condominium'
+        ? Building
         : category === 'house'
         ? Home
         : category === 'land'
@@ -35,6 +37,8 @@ export function ResilientImage({ src, alt, category, className = '' }: Resilient
         ? { bg: 'from-[#E5F0FC] to-[#C8DDF7]', icon: 'text-[#1D4ED8]', text: 'text-[#142F66]' }
         : category === 'goods'
         ? { bg: 'from-[#F8EAF2] to-[#EBC8DC]', icon: 'text-[#9D174D]', text: 'text-[#591432]' }
+        : category === 'condominium'
+        ? { bg: 'from-[#E0F4F1] to-[#BEE8E2]', icon: 'text-[#0F766E]', text: 'text-[#0D4D47]' }
         : { bg: 'from-[#E3F5EE] to-[#C5E8DA]', icon: 'text-[#0F5E48]', text: 'text-[#0B3B2E]' };
 
     return (

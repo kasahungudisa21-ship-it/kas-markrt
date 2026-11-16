@@ -9,6 +9,14 @@ const ANGLE_PROMPTS_EN: Record<ListingCategory, string[]> = {
     'Bathroom',
     'Balcony / View',
   ],
+  condominium: [
+    'Building / Block Exterior',
+    'Living Room',
+    'Kitchen',
+    'Bedroom',
+    'Bathroom',
+    'Balcony / Floor View',
+  ],
   house: [
     'Front Facade & Gate',
     'Living & Dining Room',
@@ -51,6 +59,14 @@ const ANGLE_PROMPTS_AM: Record<ListingCategory, string[]> = {
     'ዋና መኝታ ክፍል',
     'መታጠቢያ ቤት',
     'በረንዳ / እይታ',
+  ],
+  condominium: [
+    'የህንጻ / ብሎክ ውጫዊ እይታ',
+    'ሳሎን',
+    'ወጥ ቤት',
+    'መኝታ ክፍል',
+    'መታጠቢያ ቤት',
+    'በረንዳ / የፎቅ እይታ',
   ],
   house: [
     'የፊት ገጽታ እና በር',

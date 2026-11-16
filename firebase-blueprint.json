@@ -92,7 +92,7 @@
         },
         "category": {
           "type": "string",
-          "enum": ["apartment", "house", "land", "vehicle", "goods"],
+          "enum": ["apartment", "condominium", "house", "land", "vehicle", "goods"],
           "description": "Listing category"
         },
         "transactionType": {
@@ -375,7 +375,7 @@
         },
         "listingCategory": {
           "type": "string",
-          "enum": ["apartment", "house", "land", "vehicle", "goods"],
+          "enum": ["apartment", "condominium", "house", "land", "vehicle", "goods"],
           "description": "Listing category"
         },
         "transactionType": {
@@ -519,7 +519,7 @@
         },
         "category": {
           "type": "string",
-          "enum": ["apartment", "house", "land", "vehicle", "goods"],
+          "enum": ["apartment", "condominium", "house", "land", "vehicle", "goods"],
           "description": "Requested item category"
         },
         "title": {

@@ -256,7 +256,7 @@ export function ListingFormModal({
     }
 
     const specs: ListingSpecs = {};
-    if (category === 'apartment' || category === 'house') {
+    if (category === 'apartment' || category === 'condominium' || category === 'house') {
       specs.bedrooms = Number(bedrooms) || 0;
       specs.bathrooms = Number(bathrooms) || 0;
       specs.areaSqm = Number(areaSqm) || 0;
@@ -318,21 +318,21 @@ export function ListingFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#071A15]/65 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-[#061712]/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="listing-form-title"
     >
-      <div className="bg-[#FBF8F2] border border-[#CFC5B3] rounded-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 z-10 bg-[#0E362C] border-b border-[#215C4D] px-6 py-4 flex items-center justify-between text-[#FCF9F2]">
-          <h2 id="listing-form-title" className="text-lg font-bold text-amber-200">
+      <div className="bg-white border border-[#E5E0D6] rounded-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-[0_28px_70px_-18px_rgba(7,26,21,0.45)]">
+        <div className="sticky top-0 z-10 bg-[#09261E] border-b border-[#18483B] px-6 py-4 flex items-center justify-between text-[#FCF9F2]">
+          <h2 id="listing-form-title" className="text-lg font-bold tracking-tight text-amber-200">
             {editingListing ? t.editListingTitle : t.createListingTitle}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="min-w-[40px] min-h-[40px] rounded-lg border border-[#2C6F5E] bg-[#154A3D] flex items-center justify-center text-emerald-100 hover:text-white hover:bg-[#1C5E4E]"
+            className="min-w-[40px] min-h-[40px] rounded-xl border border-white/15 bg-white/10 flex items-center justify-center text-emerald-100 hover:text-white hover:bg-white/20 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -363,6 +363,7 @@ export function ListingFormModal({
                     className="w-full h-10 px-3 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-800"
                   >
                     <option value="apartment">{t.catApartment}</option>
+                    <option value="condominium">{t.catCondominium}</option>
                     <option value="house">{t.catHouse}</option>
                     <option value="land">{t.catLand}</option>
                     <option value="vehicle">{t.catVehicle}</option>
@@ -416,6 +417,8 @@ export function ListingFormModal({
                     ? '2023 Toyota Corolla Cross Hybrid'
                     : category === 'land'
                     ? '450 m² Residential Plot in CMC'
+                    : category === 'condominium'
+                    ? '2-Bedroom Condominium in Ayat / Jemo'
                     : '3-Bedroom Modern Apartment in Bole'
                 }
                 className="w-full h-10 px-3 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-800"
@@ -520,7 +523,7 @@ export function ListingFormModal({
               </p>
             </div>
 
-            {(category === 'apartment' || category === 'house') && (
+            {(category === 'apartment' || category === 'condominium' || category === 'house') && (
               <div className="space-y-4 pt-1">
                 <div className="p-4 rounded-xl bg-[#E8F3EE] border border-[#B7DACA] space-y-3">
                   <div className="text-xs font-bold text-[#0B3B2E]">

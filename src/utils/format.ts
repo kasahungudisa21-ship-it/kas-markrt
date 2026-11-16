@@ -19,7 +19,11 @@ export function formatSpecsLine(listing: Listing, lang: Language): string {
   const s = listing.specs || {};
   const parts: string[] = [];
 
-  if (listing.category === 'apartment' || listing.category === 'house') {
+  if (
+    listing.category === 'apartment' ||
+    listing.category === 'condominium' ||
+    listing.category === 'house'
+  ) {
     if (s.roomClass) {
       parts.push(getRoomClassLabel(s.roomClass, lang));
     } else if (typeof s.bedrooms === 'number') {

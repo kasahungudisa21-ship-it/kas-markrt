@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   BarChart3,
   Bell,
+  Building,
   Building2,
   Car,
   ClipboardList,
@@ -201,6 +202,7 @@ export function DashboardView({
 
     const categoryCounts: Record<ListingCategory, number> = {
       apartment: 0,
+      condominium: 0,
       house: 0,
       land: 0,
       vehicle: 0,
@@ -313,6 +315,7 @@ export function DashboardView({
 
   const categoryRows: { key: ListingCategory; Icon: typeof Building2 }[] = [
     { key: 'apartment', Icon: Building2 },
+    { key: 'condominium', Icon: Building },
     { key: 'house', Icon: Home },
     { key: 'land', Icon: MapPin },
     { key: 'vehicle', Icon: Car },
@@ -830,6 +833,7 @@ export function DashboardView({
                     >
                       <option value="all">{t.allCategories}</option>
                       <option value="apartment">{t.catApartment}</option>
+                      <option value="condominium">{t.catCondominium}</option>
                       <option value="house">{t.catHouse}</option>
                       <option value="land">{t.catLand}</option>
                       <option value="vehicle">{t.catVehicle}</option>

@@ -89,10 +89,10 @@ export function Navbar({
 
   return (
     <header
-      className={`sticky top-0 z-40 backdrop-blur-md border-t-2 border-b transition-colors ${
+      className={`sticky top-0 z-40 backdrop-blur-lg border-t-2 border-b transition-colors ${
         isDash
           ? dashHeaderBg
-          : 'bg-[#0C2E26]/95 border-t-amber-400 border-b-[#1B5244] text-[#FBF8F1]'
+          : 'bg-[#09231C]/95 border-t-amber-400 border-b-[#17463A] text-[#FBF9F4] shadow-[0_4px_24px_-12px_rgba(0,0,0,0.45)]'
       }`}
     >
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-8">

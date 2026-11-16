@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { User } from 'firebase/auth';
 import {
   ArrowLeft,
+  Building,
   Building2,
   Car,
   CheckCircle2,
@@ -134,6 +135,7 @@ export function BuyerView({
 
   const categoryTiles: { key: ListingCategory; label: string; Icon: typeof Building2 }[] = [
     { key: 'apartment', label: t.catApartment, Icon: Building2 },
+    { key: 'condominium', label: t.catCondominium, Icon: Building },
     { key: 'house', label: t.catHouse, Icon: Home },
     { key: 'land', label: t.catLand, Icon: MapPin },
     { key: 'vehicle', label: t.catVehicle, Icon: Car },
@@ -148,7 +150,10 @@ export function BuyerView({
     return allListings.filter((item) => {
       if (item.transactionType !== transactionType) return false;
       if (category !== 'all' && item.category !== category) return false;
-      const isHousing = item.category === 'apartment' || item.category === 'house';
+      const isHousing =
+        item.category === 'apartment' ||
+        item.category === 'condominium' ||
+        item.category === 'house';
       if (roomClassFilter !== 'all') {
         if (!isHousing) return false;
         const itemRc =
@@ -245,13 +250,17 @@ export function BuyerView({
         buyerPhone: wantedPhone.trim(),
         roomClass:
           transactionType === 'rent' &&
-          (wantedCategory === 'apartment' || wantedCategory === 'house') &&
+          (wantedCategory === 'apartment' ||
+            wantedCategory === 'condominium' ||
+            wantedCategory === 'house') &&
           wantedRoomClass
             ? wantedRoomClass
             : undefined,
         tenantPreference:
           transactionType === 'rent' &&
-          (wantedCategory === 'apartment' || wantedCategory === 'house') &&
+          (wantedCategory === 'apartment' ||
+            wantedCategory === 'condominium' ||
+            wantedCategory === 'house') &&
           wantedTenantPref
             ? wantedTenantPref
             : undefined,
@@ -269,26 +278,32 @@ export function BuyerView({
   };
 
   return (
-    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
-      <div className="rounded-2xl bg-gradient-to-r from-[#103048] via-[#134254] to-[#0F4944] border border-[#235F73] p-6 sm:p-7 text-[#F5FAFC] flex flex-col sm:flex-row sm:items-end justify-between gap-4 shadow-sm">
-        <div className="space-y-1.5">
+    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-7">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0A2940] via-[#0F394C] to-[#0D4641] border border-[#1E586B] p-6 sm:p-8 text-[#F5FAFC] flex flex-col sm:flex-row sm:items-end justify-between gap-4 shadow-[0_14px_34px_-16px_rgba(10,40,56,0.35)]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-20 -right-12 w-72 h-72 rounded-full bg-sky-400/10 blur-3xl"
+        />
+        <div className="relative space-y-2">
           <button
             type="button"
             onClick={onBackToBrowse}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{t.backToMarketplace}</span>
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#FBF9F2]">{t.buyerStudioTitle}</h1>
-          <p className="text-sm text-[#CBE3EC] max-w-2xl">{t.buyerStudioSubtitle}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#FBF9F2]">
+            {t.buyerStudioTitle}
+          </h1>
+          <p className="text-sm text-[#CBE3EC] max-w-2xl leading-relaxed">{t.buyerStudioSubtitle}</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="relative flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={onGoToOrders}
-            className="px-4 py-2 rounded-lg border border-sky-300/50 bg-[#194E6B] hover:bg-[#206082] text-xs font-semibold text-sky-100 whitespace-nowrap"
+            className="px-4 py-2 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-xs font-semibold text-sky-100 whitespace-nowrap transition-colors"
           >
             {isAdmin ? `${t.tabOrders} (${myOrders.length}) · ` : ''}
             {t.tabSaved} ({savedIds.size})
@@ -297,7 +312,7 @@ export function BuyerView({
             <button
               type="button"
               onClick={onSignOut}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#2B6682] bg-[#144058] hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-sky-100 transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-white/15 bg-white/5 hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-sky-100 transition-colors whitespace-nowrap shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>{t.signOut}</span>
@@ -307,16 +322,16 @@ export function BuyerView({
       </div>
 
       {/* Step 1: Standalone Top Selector for Looking to Buy vs Looking to Rent */}
-      <div className="bg-[#FAF7F0] border border-[#D8D0C1] rounded-xl p-5 sm:p-6 space-y-3 shadow-sm">
+      <div className="bg-white border border-[#E5E0D6] rounded-2xl p-5 sm:p-6 space-y-3.5 shadow-[0_6px_24px_-12px_rgba(12,46,38,0.08)]">
         <h2 className="text-sm font-bold text-[#143B5C]">{t.chooseBuyOrRentLabel}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             type="button"
             onClick={() => handleSelectTx('sale')}
-            className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
+            className={`p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               transactionType === 'sale'
-                ? 'border-[#9A3412] bg-[#FEF2E4] ring-2 ring-[#C2410C]/40'
-                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
+                ? 'border-[#C2410C] bg-[#FFF8F2] ring-2 ring-[#C2410C]/25 shadow-sm'
+                : 'border-[#E5E0D6] bg-[#FAF8F4] hover:bg-white hover:border-[#C9C1B2]'
             }`}
           >
             <div
@@ -338,10 +353,10 @@ export function BuyerView({
           <button
             type="button"
             onClick={() => handleSelectTx('rent')}
-            className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
+            className={`p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
               transactionType === 'rent'
-                ? 'border-[#1E40AF] bg-[#E8F1FC] ring-2 ring-[#2563EB]/40'
-                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
+                ? 'border-[#1D4ED8] bg-[#F4F8FF] ring-2 ring-[#2563EB]/25 shadow-sm'
+                : 'border-[#E5E0D6] bg-[#FAF8F4] hover:bg-white hover:border-[#C9C1B2]'
             }`}
           >
             <div
@@ -363,19 +378,19 @@ export function BuyerView({
       </div>
 
       {/* Step 2: Directly Underneath — Enter What You Want to Buy or Rent */}
-      <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 sm:p-6 space-y-4 shadow-sm">
+      <div className="bg-white border border-[#E5E0D6] rounded-2xl p-5 sm:p-6 space-y-4 shadow-[0_6px_24px_-12px_rgba(12,46,38,0.08)]">
         <h2 className="text-sm font-bold text-[#0F4C3A]">
           {transactionType === 'sale' ? t.whatBuyingLabel : t.whatRentingBuyerLabel}
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
           <button
             type="button"
             onClick={() => setCategory('all')}
-            className={`p-3 rounded-lg border text-left transition-colors flex flex-col justify-center ${
+            className={`p-3 rounded-xl border text-left transition-colors flex flex-col justify-center ${
               category === 'all'
-                ? 'border-[#0F4C3A] bg-[#0F4C3A] text-white font-semibold'
-                : 'border-[#D8D0C1] bg-[#F7F3EA] text-[#2F423B] hover:bg-[#EFE9DC]'
+                ? 'border-[#0F4C3A] bg-[#0F4C3A] text-white font-semibold shadow-sm'
+                : 'border-[#E5E0D6] bg-[#F7F5F0] text-[#2F423B] hover:bg-[#EFECE4]'
             }`}
           >
             <span className="text-xs font-semibold">{t.allCategories}</span>
@@ -389,6 +404,8 @@ export function BuyerView({
                 ? 'border-[#1D4ED8] bg-[#E5F0FC] text-[#142F66]'
                 : key === 'goods'
                 ? 'border-[#9D174D] bg-[#F8EAF2] text-[#591432]'
+                : key === 'condominium'
+                ? 'border-[#0F766E] bg-[#E0F4F1] text-[#0D4D47]'
                 : 'border-[#0F5E48] bg-[#E3F5EE] text-[#0B3B2E]';
             const iconColor =
               key === 'land'
@@ -397,6 +414,8 @@ export function BuyerView({
                 ? 'text-[#1D4ED8]'
                 : key === 'goods'
                 ? 'text-[#9D174D]'
+                : key === 'condominium'
+                ? 'text-[#0F766E]'
                 : 'text-[#0F5E48]';
             return (
               <button
@@ -405,15 +424,15 @@ export function BuyerView({
                 onClick={() => {
                   setCategory(key);
                   setWantedCategory(key);
-                  if (key !== 'apartment' && key !== 'house') {
+                  if (key !== 'apartment' && key !== 'condominium' && key !== 'house') {
                     setRoomClassFilter('all');
                     setTenantPrefFilter('all');
                   }
                 }}
-                className={`p-3 rounded-lg border text-left transition-colors flex flex-col gap-1.5 ${
+                className={`p-3 rounded-xl border text-left transition-colors flex flex-col gap-1.5 ${
                   active
                     ? `${activeColors} shadow-sm`
-                    : 'border-[#D8D0C1] bg-[#F7F3EA] text-[#2F423B] hover:bg-[#EFE9DC]'
+                    : 'border-[#E5E0D6] bg-[#F7F5F0] text-[#2F423B] hover:bg-[#EFECE4]'
                 }`}
               >
                 <Icon className={`w-4 h-4 ${active ? iconColor : 'text-[#5A6B65]'}`} />
@@ -431,7 +450,7 @@ export function BuyerView({
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full h-10 pl-10 pr-3 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-sm text-[#102620] focus:outline-none focus:ring-2 focus:ring-emerald-800"
+              className="w-full h-10 pl-10 pr-3 rounded-xl border border-[#D5CFC2] bg-[#FAF8F4] focus:bg-white text-sm text-[#102620] focus:outline-none focus:ring-2 focus:ring-emerald-800/30 focus:border-[#0F4C3A]"
             />
           </div>
           <div className="sm:col-span-3 relative">
@@ -443,7 +462,7 @@ export function BuyerView({
               value={neighborhood}
               onChange={(e) => setNeighborhood(e.target.value)}
               placeholder={t.locationFilterPlaceholder}
-              className="w-full h-10 pl-9 pr-8 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-sm text-[#102620] placeholder:text-[#6B665A] focus:outline-none focus:ring-2 focus:ring-emerald-800"
+              className="w-full h-10 pl-9 pr-8 rounded-xl border border-[#D5CFC2] bg-[#FAF8F4] focus:bg-white text-sm text-[#102620] placeholder:text-[#6B665A] focus:outline-none focus:ring-2 focus:ring-emerald-800/30 focus:border-[#0F4C3A]"
             />
             {neighborhood && (
               <button
@@ -468,13 +487,16 @@ export function BuyerView({
               placeholder={`${t.maxBudgetLabel} (ETB/USD)`}
               value={maxBudget}
               onChange={(e) => setMaxBudget(e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-sm font-mono tabular-nums text-[#102620]"
+              className="w-full h-10 px-3 rounded-xl border border-[#D5CFC2] bg-[#FAF8F4] focus:bg-white text-sm font-mono tabular-nums text-[#102620] focus:outline-none focus:ring-2 focus:ring-emerald-800/30 focus:border-[#0F4C3A]"
             />
           </div>
         </div>
 
         {transactionType === 'rent' &&
-          (category === 'all' || category === 'apartment' || category === 'house') && (
+          (category === 'all' ||
+            category === 'apartment' ||
+            category === 'condominium' ||
+            category === 'house') && (
             <div className="p-4 rounded-xl bg-[#E8F1FC] border border-[#B2CDF0] space-y-3">
               <div className="text-xs font-bold text-[#142F66]">{t.rentalOptionsHeading}</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -540,7 +562,7 @@ export function BuyerView({
         <div className="lg:col-span-8 space-y-6">
           {/* Side-by-Side Comparison Strip when 2+ items selected */}
           {comparedListings.length >= 2 && (
-            <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 space-y-4 overflow-x-auto shadow-sm">
+            <div className="bg-white border border-[#E5E0D6] rounded-2xl p-5 space-y-4 overflow-x-auto shadow-[0_6px_24px_-12px_rgba(12,46,38,0.08)]">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-sm font-bold text-[#142F66]">
                   <Scale className="w-4 h-4 text-[#1D4ED8]" />
@@ -626,7 +648,7 @@ export function BuyerView({
           </div>
 
           {matchingListings.length === 0 ? (
-            <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center space-y-3">
+            <div className="bg-white border border-[#E5E0D6] rounded-2xl p-10 text-center space-y-3 shadow-[0_6px_24px_-12px_rgba(12,46,38,0.06)]">
               <p className="text-sm text-[#42544F]">{t.noListingsFound}</p>
               <button
                 type="button"
@@ -679,8 +701,8 @@ export function BuyerView({
 
         {/* Right Sticky Column: Post a Buyer Request + Live Buyer Requests Feed */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-          <div className="bg-[#FDF8EE] border border-[#DFC99D] rounded-xl p-5 sm:p-6 space-y-4 shadow-sm">
-            <div className="space-y-1">
+          <div className="bg-white border border-[#E5DCC7] rounded-2xl p-5 sm:p-6 space-y-4 shadow-[0_10px_30px_-14px_rgba(154,52,18,0.12)]">
+            <div className="space-y-1 pb-3 border-b border-[#EFEAE0]">
               <h2 className="text-base font-bold text-[#7C2D12]">{t.postWantedTitle}</h2>
               <p className="text-xs text-[#6B462B] leading-relaxed">{t.postWantedSubtitle}</p>
             </div>
@@ -712,6 +734,7 @@ export function BuyerView({
                     className="w-full h-10 px-3 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900"
                   >
                     <option value="apartment">{t.catApartment}</option>
+                    <option value="condominium">{t.catCondominium}</option>
                     <option value="house">{t.catHouse}</option>
                     <option value="land">{t.catLand}</option>
                     <option value="vehicle">{t.catVehicle}</option>
@@ -720,7 +743,9 @@ export function BuyerView({
                 </div>
 
                 {transactionType === 'rent' &&
-                  (wantedCategory === 'apartment' || wantedCategory === 'house') && (
+                  (wantedCategory === 'apartment' ||
+                    wantedCategory === 'condominium' ||
+                    wantedCategory === 'house') && (
                     <div className="grid grid-cols-2 gap-2.5">
                       <div>
                         <label className="block text-xs font-medium text-zinc-700 mb-1">
@@ -876,11 +901,11 @@ export function BuyerView({
           </div>
 
           {buyerRequests.length > 0 && (
-            <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 space-y-4 shadow-sm">
+            <div className="bg-white border border-[#E5E0D6] rounded-2xl p-5 space-y-4 shadow-[0_6px_24px_-12px_rgba(12,46,38,0.08)]">
               <h3 className="text-sm font-bold text-[#0F4C3A]">
                 {t.activeWantedTitle} ({buyerRequests.length})
               </h3>
-              <div className="divide-y divide-[#EAE2D3]">
+              <div className="divide-y divide-[#EFECE4]">
                 {buyerRequests.map((req) => {
                   const isOwn = Boolean(user && req.buyerId === user.uid);
                   return (

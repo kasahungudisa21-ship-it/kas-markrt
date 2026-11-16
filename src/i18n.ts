@@ -40,6 +40,7 @@ interface Dictionary {
   stripGoodsSub: string;
   allCategories: string;
   catApartment: string;
+  catCondominium: string;
   catHouse: string;
   catLand: string;
   catVehicle: string;
@@ -334,11 +335,11 @@ const en: Dictionary = {
   postListing: 'Sell / Post',
   heroTitle: 'Properties, land, vehicles, and goods in one direct marketplace.',
   heroSubtitle:
-    'Browse verified homes and apartments for rent or sale, surveyed land plots, inspected vehicles, and everyday items—place orders or connect directly with owners.',
-  searchPlaceholder: 'Search apartment, Bole, RAV4, land plot, sofa...',
+    'Browse verified homes, condominiums, and apartments for rent or sale, surveyed land plots, inspected vehicles, and everyday items—place orders or connect directly with owners.',
+  searchPlaceholder: 'Search condominium, apartment, Bole, RAV4, land plot...',
   searchButton: 'Search',
   heroLocationCaption: 'Bole · Old Airport · Kazanchis · CMC · Sarbet',
-  stripPropertiesTitle: 'Apartments & Houses',
+  stripPropertiesTitle: 'Apartments, Condos & Houses',
   stripPropertiesSub: 'For Sale & For Rent',
   stripLandTitle: 'Land & Plots',
   stripLandSub: 'Surveyed Parcels',
@@ -348,6 +349,7 @@ const en: Dictionary = {
   stripGoodsSub: 'Furniture, Tech & More',
   allCategories: 'All',
   catApartment: 'Apartments',
+  catCondominium: 'Condominiums',
   catHouse: 'Houses',
   catLand: 'Land',
   catVehicle: 'Vehicles',
@@ -642,13 +644,13 @@ const am: Dictionary = {
   navRent: 'መከራየት',
   navSell: 'መሸጥ',
   postListing: 'ለመሸጥ ለጥፍ',
-  heroTitle: 'ቤቶች፣ አፓርታማ፣ መሬት፣ መኪኖች እና የተለያዩ ዕቃዎች በአንድ ቦታ።',
+  heroTitle: 'ቤቶች፣ ኮንዶሚኒየም፣ አፓርታማ፣ መሬት፣ መኪኖች እና የተለያዩ ዕቃዎች በአንድ ቦታ።',
   heroSubtitle:
-    'የሚከራዩ እና የሚሸጡ ቤቶችን፣ አፓርታማዎችን፣ ቦታዎችን፣ መኪኖችን እና የተለያዩ ዕቃዎችን እያዩ በቀጥታ ይዘዙ ወይም ከባለቤቶች ጋር ይገናኙ።',
-  searchPlaceholder: 'አፓርታማ፣ ቦሌ፣ RAV4፣ መሬት፣ ሶፋ ይፈልጉ...',
+    'የሚከራዩ እና የሚሸጡ ቤቶችን፣ ኮንዶሚኒየሞችን፣ አፓርታማዎችን፣ ቦታዎችን፣ መኪኖችን እና የተለያዩ ዕቃዎችን እያዩ በቀጥታ ይዘዙ ወይም ከባለቤቶች ጋር ይገናኙ።',
+  searchPlaceholder: 'ኮንዶሚኒየም፣ አፓርታማ፣ ቦሌ፣ RAV4፣ መሬት ይፈልጉ...',
   searchButton: 'ፈልግ',
   heroLocationCaption: 'ቦሌ · ኦልድ ኤርፖርት · ካዛንቺስ · ሲኤምሲ · ሳርቤት',
-  stripPropertiesTitle: 'አፓርታማ እና ቤቶች',
+  stripPropertiesTitle: 'አፓርታማ፣ ኮንዶሚኒየም እና ቤቶች',
   stripPropertiesSub: 'ለሽያጭ እና ለኪራይ',
   stripLandTitle: 'መሬት እና ቦታዎች',
   stripLandSub: 'ካርታ ያላቸው ቦታዎች',
@@ -658,6 +660,7 @@ const am: Dictionary = {
   stripGoodsSub: 'የቤት ዕቃ እና ኤሌክትሮኒክስ',
   allCategories: 'ሁሉም',
   catApartment: 'አፓርታማ',
+  catCondominium: 'ኮንዶሚኒየም',
   catHouse: 'ቤቶች',
   catLand: 'መሬት',
   catVehicle: 'መኪኖች',
@@ -945,6 +948,8 @@ export function getCategoryLabel(category: ListingCategory, lang: Language): str
   switch (category) {
     case 'apartment':
       return t.catApartment;
+    case 'condominium':
+      return t.catCondominium;
     case 'house':
       return t.catHouse;
     case 'land':

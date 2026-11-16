@@ -19,6 +19,16 @@ export const CATEGORY_PRESET_IMAGES: Record<ListingCategory, { label: string; ur
       url: heroModernAddis,
     },
   ],
+  condominium: [
+    {
+      label: 'Modern Condominium Unit',
+      url: listingApartmentBole,
+    },
+    {
+      label: 'Condominium Residence Block',
+      url: heroModernAddis,
+    },
+  ],
   house: [
     {
       label: 'Two-Story Family Villa',

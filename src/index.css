@@ -7,10 +7,14 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     font-family: var(--font-sans);
-    background-color: #ede8df;
-    color: #122620;
+    background-color: #f7f5f0;
+    color: #0f241e;
   }
 
   h1, h2, h3, h4 {
