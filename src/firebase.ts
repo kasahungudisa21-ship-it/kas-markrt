@@ -44,14 +44,41 @@ import {
   TenantPreference,
 } from './types';
 
-export const ADMIN_EMAIL = 'kasahungudisa12@gmail.com';
+export const ADMIN_EMAIL = (
+  import.meta.env.VITE_ADMIN_EMAIL || 'kasahungudisa12@gmail.com'
+)
+  .trim()
+  .toLowerCase();
 
 export function isAdminUser(user: User | null): boolean {
   return Boolean(user && user.emailVerified && user.email?.toLowerCase() === ADMIN_EMAIL);
 }
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const hasEnvFirebaseConfig = Boolean(
+  import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID
+);
+
+const activeFirebaseConfig = hasEnvFirebaseConfig
+  ? {
+      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+      authDomain:
+        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ||
+        `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
+      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+      storageBucket:
+        import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
+        `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebasestorage.app`,
+      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+      appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+    }
+  : firebaseConfig;
+
+const activeDatabaseId = hasEnvFirebaseConfig
+  ? (import.meta.env.VITE_FIREBASE_DATABASE_ID || '').trim()
+  : firebaseConfig.firestoreDatabaseId;
+
+const app = initializeApp(activeFirebaseConfig);
+export const db = activeDatabaseId ? getFirestore(app, activeDatabaseId) : getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Home,
   Lock,
+  LogOut,
   MapPin,
   Package,
   Volume2,
@@ -44,6 +45,7 @@ interface SellViewProps {
   onBackToBrowse: () => void;
   onGoToOrders: () => void;
   onSignIn: () => void;
+  onSignOut?: () => void;
 }
 
 export function SellView({
@@ -55,6 +57,7 @@ export function SellView({
   onBackToBrowse,
   onGoToOrders,
   onSignIn,
+  onSignOut,
 }: SellViewProps) {
   const t = translations[lang];
 
@@ -272,7 +275,7 @@ export function SellView({
         </div>
 
         {user && (
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               type="button"
               onClick={onGoToOrders}
@@ -280,6 +283,16 @@ export function SellView({
             >
               {t.tabMyListings} ({myListings.length}) · {t.tabOrders} ({incomingOrdersCount})
             </button>
+            {onSignOut && (
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-medium text-zinc-700 transition-colors whitespace-nowrap shrink-0"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{t.signOut}</span>
+              </button>
+            )}
           </div>
         )}
       </div>

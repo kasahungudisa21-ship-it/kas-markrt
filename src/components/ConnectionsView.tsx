@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
-import { ArrowLeft, Bell, Check, CheckCheck, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, Check, CheckCheck, LogOut, Pencil, Trash2 } from 'lucide-react';
 import {
   closeInquiryThread,
   deleteNotification,
@@ -150,9 +150,10 @@ export function ConnectionsView({
               <button
                 type="button"
                 onClick={onSignOut}
-                className="px-3.5 py-2 rounded-lg border border-zinc-300 text-xs font-medium text-zinc-700 hover:bg-zinc-100 whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-zinc-300 text-xs font-medium text-zinc-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors whitespace-nowrap shrink-0"
               >
-                {t.signOut}
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{t.signOut}</span>
               </button>
             </>
           ) : (

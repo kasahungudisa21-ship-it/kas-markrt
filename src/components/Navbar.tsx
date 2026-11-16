@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Menu, Plus, X } from 'lucide-react';
+import { User } from 'firebase/auth';
+import { LogOut, Menu, Plus, X } from 'lucide-react';
 import { translations } from '../i18n';
 import { Language } from '../types';
 import { DashboardTheme } from './DashboardView';
@@ -19,8 +20,11 @@ interface NavbarProps {
   activeNav: NavSection;
   dashboardTheme?: DashboardTheme;
   unreadNotifCount?: number;
+  user?: User | null;
   onSelectNav: (nav: NavSection) => void;
   onOpenSellPage: () => void;
+  onSignIn?: () => void;
+  onSignOut?: () => void;
 }
 
 export function Navbar({
@@ -28,8 +32,11 @@ export function Navbar({
   activeNav,
   dashboardTheme = 'cobalt',
   unreadNotifCount = 0,
+  user = null,
   onSelectNav,
   onOpenSellPage,
+  onSignIn,
+  onSignOut,
 }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const t = translations[lang];
@@ -243,6 +250,53 @@ export function Navbar({
               </button>
             );
           })}
+          {(onSignOut || onSignIn) && (
+            <div className="pt-2 pb-1 px-3 flex items-center justify-between gap-3">
+              {user ? (
+                <>
+                  <span
+                    className={`text-xs truncate max-w-[180px] ${
+                      isDash ? 'text-slate-300' : 'text-zinc-600'
+                    }`}
+                  >
+                    {user.displayName || user.email || t.signedInAs}
+                  </span>
+                  {onSignOut && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSignOut();
+                        setMobileOpen(false);
+                      }}
+                      className={`inline-flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-lg border text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
+                        isDash
+                          ? 'border-slate-700 text-slate-200 hover:bg-slate-800'
+                          : 'border-zinc-200 text-zinc-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200'
+                      }`}
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{t.signOut}</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                onSignIn && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSignIn();
+                      setMobileOpen(false);
+                    }}
+                    className={`w-full min-h-[44px] px-4 py-2 rounded-lg text-xs font-medium text-white transition-colors ${
+                      isDash ? dashAccentBtn : 'bg-emerald-800 hover:bg-emerald-900'
+                    }`}
+                  >
+                    {t.signInGoogle}
+                  </button>
+                )
+              )}
+            </div>
+          )}
         </nav>
       )}
     </header>

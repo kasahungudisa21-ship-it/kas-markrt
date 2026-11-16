@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { BellRing, Building2, Car, Globe, MapPin, Package, Search, X } from 'lucide-react';
+import { BellRing, Building2, Car, Globe, LogOut, MapPin, Package, Search, X } from 'lucide-react';
 import { BuyerView } from './components/BuyerView';
 import { ConnectionsTab, ConnectionsView } from './components/ConnectionsView';
 import { DashboardTheme, DashboardView } from './components/DashboardView';
@@ -449,6 +449,16 @@ export default function App() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOutAccount();
+      setPostModalOpen(false);
+      setEditingListing(null);
+    } catch {
+      // Sign-out state handled by onAuthStateChanged
+    }
+  };
+
   const handleResetFilters = () => {
     setCategoryFilter('all');
     setTxFilter('all');
@@ -492,8 +502,11 @@ export default function App() {
         activeNav={activeNav}
         dashboardTheme={dashboardTheme}
         unreadNotifCount={unreadNotificationsCount}
+        user={user}
         onSelectNav={handleSelectNav}
         onOpenSellPage={() => setActiveNav('sell')}
+        onSignIn={handleSignIn}
+        onSignOut={handleSignOut}
       />
 
       <main className="flex-1">
@@ -521,6 +534,7 @@ export default function App() {
             }}
             onDeleteListing={handleDeleteListing}
             onSignIn={handleSignIn}
+            onSignOut={handleSignOut}
           />
         ) : activeNav === 'buyer' ? (
           <BuyerView
@@ -537,6 +551,7 @@ export default function App() {
             onSelectListing={handleSelectListing}
             onToggleSave={handleToggleSave}
             onSignIn={handleSignIn}
+            onSignOut={handleSignOut}
           />
         ) : activeNav === 'sell' ? (
           <SellView
@@ -548,6 +563,7 @@ export default function App() {
             onBackToBrowse={() => setActiveNav('explore')}
             onGoToOrders={() => setActiveNav('connections')}
             onSignIn={handleSignIn}
+            onSignOut={handleSignOut}
           />
         ) : activeNav === 'connections' ? (
           <ConnectionsView
@@ -571,7 +587,7 @@ export default function App() {
             onDeleteListing={handleDeleteListing}
             onOpenSellPage={() => setActiveNav('sell')}
             onSignIn={handleSignIn}
-            onSignOut={signOutAccount}
+            onSignOut={handleSignOut}
           />
         ) : (
           <>
@@ -596,13 +612,23 @@ export default function App() {
                           </button>
 
                           {user ? (
-                            <button
-                              type="button"
-                              onClick={() => setActiveNav('connections')}
-                              className="px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-800 truncate max-w-[140px]"
-                            >
-                              {user.displayName || t.signedInAs}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setActiveNav('connections')}
+                                className="px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-800 truncate max-w-[140px]"
+                              >
+                                {user.displayName || t.signedInAs}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSignOut}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-medium text-zinc-700 transition-colors whitespace-nowrap shrink-0"
+                              >
+                                <LogOut className="w-3.5 h-3.5" />
+                                <span>{t.signOut}</span>
+                              </button>
+                            </>
                           ) : (
                             <button
                               type="button"
@@ -1047,6 +1073,23 @@ export default function App() {
             >
               {t.navConnections}
             </button>
+            {user ? (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className={isDash ? 'hover:text-white transition-colors' : 'hover:text-red-700 transition-colors'}
+              >
+                {t.signOut}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSignIn}
+                className={isDash ? 'hover:text-white transition-colors' : 'hover:text-zinc-900 transition-colors'}
+              >
+                {t.signInGoogle}
+              </button>
+            )}
           </div>
         </div>
       </footer>

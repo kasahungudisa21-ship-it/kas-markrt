@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Home,
   Lock,
+  LogOut,
   MapPin,
   Package,
   Scale,
@@ -55,6 +56,7 @@ interface BuyerViewProps {
   onSelectListing: (listing: Listing, initialTab?: 'order' | 'message') => void;
   onToggleSave: (listing: Listing) => void;
   onSignIn: () => void;
+  onSignOut?: () => void;
 }
 
 export function BuyerView({
@@ -71,6 +73,7 @@ export function BuyerView({
   onSelectListing,
   onToggleSave,
   onSignIn,
+  onSignOut,
 }: BuyerViewProps) {
   const t = translations[lang];
 
@@ -256,7 +259,7 @@ export function BuyerView({
           <p className="text-sm text-zinc-600 max-w-2xl">{t.buyerStudioSubtitle}</p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={onGoToOrders}
@@ -264,6 +267,16 @@ export function BuyerView({
           >
             {t.tabOrders} ({myOrders.length}) · {t.tabSaved} ({savedIds.size})
           </button>
+          {user && onSignOut && (
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-medium text-zinc-700 transition-colors whitespace-nowrap shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{t.signOut}</span>
+            </button>
+          )}
         </div>
       </div>
 

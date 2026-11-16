@@ -11,6 +11,7 @@ import {
   Home,
   LayoutDashboard,
   Lock,
+  LogOut,
   MapPin,
   Package,
   Palette,
@@ -76,6 +77,7 @@ interface DashboardViewProps {
   onOpenNotifications?: () => void;
   onDeleteListing?: (listing: Listing) => Promise<void> | void;
   onSignIn: () => void;
+  onSignOut?: () => void;
 }
 
 interface ThemeTokens {
@@ -170,6 +172,7 @@ export function DashboardView({
   onOpenNotifications,
   onDeleteListing,
   onSignIn,
+  onSignOut,
 }: DashboardViewProps) {
   const t = translations[lang];
   const palette = THEME_TOKENS[theme];
@@ -494,6 +497,27 @@ export function DashboardView({
                   <Plus className="w-3.5 h-3.5" />
                   <span>{t.postListing}</span>
                 </button>
+
+                {user ? (
+                  onSignOut && (
+                    <button
+                      type="button"
+                      onClick={onSignOut}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border ${palette.border} ${palette.surfaceAlt} text-xs font-medium ${palette.textSecondary} hover:opacity-90 whitespace-nowrap shrink-0`}
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{t.signOut}</span>
+                    </button>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onSignIn}
+                    className={`px-3.5 py-2 rounded-lg border ${palette.border} ${palette.surfaceAlt} text-xs font-medium ${palette.textSecondary} hover:opacity-90 whitespace-nowrap shrink-0`}
+                  >
+                    {t.signInGoogle}
+                  </button>
+                )}
               </div>
             </div>
 
