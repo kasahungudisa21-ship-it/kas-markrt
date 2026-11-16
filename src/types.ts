@@ -64,6 +64,10 @@ export interface Listing {
   imageUrl: string;
   photoCount?: number;
   photos?: ListingPhoto[];
+  videoUrl?: string;
+  videoMimeType?: string;
+  videoDurationSec?: number;
+  videoChunkCount?: number;
   status: ListingStatus;
   specs: ListingSpecs;
   createdAtMs: number;

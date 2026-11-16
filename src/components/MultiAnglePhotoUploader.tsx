@@ -246,15 +246,15 @@ export function MultiAnglePhotoUploader({
       </div>
 
       {/* Slim 6-step Progress Indicator */}
-      <div className="w-full h-1.5 rounded-full bg-zinc-100 overflow-hidden">
+      <div className="w-full h-1.5 rounded-full bg-[#DFD7C8] overflow-hidden">
         <div
-          className="h-full bg-emerald-800 transition-all duration-200"
+          className="h-full bg-[#0F5E48] transition-all duration-200"
           style={{ width: `${Math.round((filledCount / 6) * 100)}%` }}
         />
       </div>
 
       {uploadError && (
-        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        <p className="text-xs text-amber-900 bg-amber-100 border border-amber-300 rounded-lg px-3 py-2">
           {uploadError}
         </p>
       )}
@@ -270,11 +270,11 @@ export function MultiAnglePhotoUploader({
             <div
               key={idx}
               className={`rounded-xl border p-2.5 space-y-2 transition-colors ${
-                slot ? 'border-emerald-800/40 bg-emerald-50/20' : 'border-zinc-200 bg-zinc-50/60'
+                slot ? 'border-[#0F5E48]/50 bg-[#E3F5EE]/70' : 'border-[#D4CBB9] bg-[#F4EFE4]'
               }`}
             >
               <div className="flex items-center justify-between gap-2 text-[11px]">
-                <span className="font-medium text-zinc-700 truncate">
+                <span className="font-semibold text-[#18382F] truncate">
                   0{idx + 1}. {slot ? slot.angleLabel : promptLabel}
                 </span>
                 {isCover && (

@@ -1,0 +1,16 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="kas-fav-grad" x1="4" y1="2" x2="36" y2="38" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="37" height="37" rx="10" fill="url(#kas-fav-grad)" />
+  <rect x="4" y="4" width="32" height="32" rx="7.5" fill="#0B2D25" />
+  <path d="M20 6.8L22.4 9.2L20 11.6L17.6 9.2L20 6.8Z" fill="#34D399" />
+  <path d="M9.5 18.2L20 9.6L30.5 18.2" stroke="#FBBF24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M11 31.2H29" stroke="#FBBF24" stroke-opacity="0.45" stroke-width="1.6" stroke-linecap="round" />
+  <path d="M14 17.5V28.5" stroke="#FCF8EE" stroke-width="2.9" stroke-linecap="round" />
+  <path d="M25.5 17.8L16.2 23.1L26 28.5" stroke="#FCF8EE" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="16.2" cy="23.1" r="1.4" fill="#34D399" />
+</svg>

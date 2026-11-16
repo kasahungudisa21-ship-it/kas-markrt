@@ -53,6 +53,7 @@ import {
   TransactionType,
 } from '../types';
 import { formatPrice } from '../utils/format';
+import { KasLogo } from './KasLogo';
 
 export type DashboardTheme = 'cobalt' | 'indigo' | 'amber';
 type DashboardTab = 'overview' | 'listings' | 'orders' | 'demand' | 'contacts';
@@ -290,7 +291,8 @@ export function DashboardView({
     });
   }, [isAdmin, contactDirectory, contactRoleFilter, contactSearch]);
 
-  const effectiveTab: DashboardTab = !isAdmin && activeTab === 'contacts' ? 'overview' : activeTab;
+  const effectiveTab: DashboardTab =
+    !isAdmin && (activeTab === 'contacts' || activeTab === 'orders') ? 'overview' : activeTab;
 
   const sidebarItems: {
     key: DashboardTab;
@@ -300,7 +302,9 @@ export function DashboardView({
   }[] = [
     { key: 'overview', label: t.dashNavOverview, Icon: LayoutDashboard },
     { key: 'listings', label: t.dashNavListings, count: allListings.length, Icon: ClipboardList },
-    { key: 'orders', label: t.dashNavOrders, count: orders.length, Icon: ShoppingBag },
+    ...(isAdmin
+      ? [{ key: 'orders' as const, label: t.dashNavOrders, count: orders.length, Icon: ShoppingBag }]
+      : []),
     { key: 'demand', label: t.dashNavDemand, count: buyerRequests.length, Icon: Users },
     ...(isAdmin
       ? [{ key: 'contacts' as const, label: t.dashNavContacts, count: contactDirectory.length, Icon: Phone }]
@@ -383,9 +387,9 @@ export function DashboardView({
           <aside
             className={`w-full lg:w-[240px] shrink-0 rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-5`}
           >
-            <div className="space-y-1 px-2">
-              <div className={`text-xs font-medium ${palette.textMuted}`}>{t.brand}</div>
-              <div className={`text-sm font-semibold ${palette.textPrimary}`}>{t.dashTitle}</div>
+            <div className="space-y-1.5 px-2">
+              <KasLogo variant={theme} size="sm" />
+              <div className={`text-xs font-medium ${palette.textMuted}`}>{t.dashTitle}</div>
             </div>
 
             <nav aria-label="Dashboard sections" className="grid grid-cols-2 lg:grid-cols-1 gap-1.5">
@@ -533,27 +537,53 @@ export function DashboardView({
                 </div>
               </div>
 
-              <div className={`rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-2`}>
-                <div className={`text-xs font-medium ${palette.textMuted}`}>{t.dashKpiOrders}</div>
-                <div className="font-mono text-2xl font-bold tabular-nums">
-                  {metrics.totalOrders}
-                </div>
-                <div className={`text-xs ${palette.textMuted} tabular-nums`}>
-                  {user
-                    ? `${metrics.pendingOrders} Pending · ${metrics.confirmedOrders} Confirmed`
-                    : t.signInGoogle}
-                </div>
-              </div>
+              {isAdmin ? (
+                <>
+                  <div className={`rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-2`}>
+                    <div className={`text-xs font-medium ${palette.textMuted}`}>{t.dashKpiOrders}</div>
+                    <div className="font-mono text-2xl font-bold tabular-nums">
+                      {metrics.totalOrders}
+                    </div>
+                    <div className={`text-xs ${palette.textMuted} tabular-nums`}>
+                      {user
+                        ? `${metrics.pendingOrders} Pending · ${metrics.confirmedOrders} Confirmed`
+                        : t.signInGoogle}
+                    </div>
+                  </div>
 
-              <div className={`rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-2`}>
-                <div className={`text-xs font-medium ${palette.textMuted}`}>{t.dashKpiVolume}</div>
-                <div className={`font-mono text-2xl font-bold tabular-nums ${palette.accentText}`}>
-                  {formatCompactCurrency(metrics.orderEtb, 'ETB')}
-                </div>
-                <div className={`text-xs ${palette.textMuted} font-mono tabular-nums`}>
-                  + {formatCompactCurrency(metrics.orderUsd, 'USD')}
-                </div>
-              </div>
+                  <div className={`rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-2`}>
+                    <div className={`text-xs font-medium ${palette.textMuted}`}>{t.dashKpiVolume}</div>
+                    <div className={`font-mono text-2xl font-bold tabular-nums ${palette.accentText}`}>
+                      {formatCompactCurrency(metrics.orderEtb, 'ETB')}
+                    </div>
+                    <div className={`text-xs ${palette.textMuted} font-mono tabular-nums`}>
+                      + {formatCompactCurrency(metrics.orderUsd, 'USD')}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={`rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-2`}>
+                    <div className={`text-xs font-medium ${palette.textMuted}`}>{t.txSale}</div>
+                    <div className="font-mono text-2xl font-bold tabular-nums">
+                      {metrics.saleCount}
+                    </div>
+                    <div className={`text-xs ${palette.textMuted} tabular-nums`}>
+                      {t.dashKpiListings}
+                    </div>
+                  </div>
+
+                  <div className={`rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-2`}>
+                    <div className={`text-xs font-medium ${palette.textMuted}`}>{t.txRent}</div>
+                    <div className={`font-mono text-2xl font-bold tabular-nums ${palette.accentText}`}>
+                      {metrics.rentCount}
+                    </div>
+                    <div className={`text-xs ${palette.textMuted} tabular-nums`}>
+                      {t.dashKpiListings}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className={`rounded-xl border ${palette.border} ${palette.surface} p-4 space-y-2`}>
                 <div className={`text-xs font-medium ${palette.textMuted}`}>{t.dashKpiDemand}</div>
@@ -923,7 +953,7 @@ export function DashboardView({
               </div>
             )}
 
-            {effectiveTab === 'orders' && (
+            {effectiveTab === 'orders' && isAdmin && (
               <div className={`rounded-xl border ${palette.border} ${palette.surface} p-5 space-y-6`}>
                 {user && notifications.length > 0 && (
                   <div

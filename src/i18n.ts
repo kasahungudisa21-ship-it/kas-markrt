@@ -20,6 +20,10 @@ interface Dictionary {
   navVehicles: string;
   navGoods: string;
   navConnections: string;
+  navConnectionsUser: string;
+  navBuy: string;
+  navRent: string;
+  navSell: string;
   postListing: string;
   heroTitle: string;
   heroSubtitle: string;
@@ -75,6 +79,7 @@ interface Dictionary {
   signInToConnect: string;
   signInToOrder: string;
   ownListingNotice: string;
+  ownListingNoticeUser: string;
   showcaseNotice: string;
   quantityLabel: string;
   paymentMethodLabel: string;
@@ -89,6 +94,7 @@ interface Dictionary {
   confirmOrderButton: string;
   orderConfirmedTitle: string;
   orderConfirmedBody: string;
+  orderConfirmedBuyerBody: string;
   viewMyOrders: string;
   specsHeading: string;
   bedrooms: string;
@@ -103,6 +109,7 @@ interface Dictionary {
   sellerLabel: string;
   locationLabel: string;
   connectionsTitle: string;
+  connectionsUserTitle: string;
   tabOrders: string;
   tabSaved: string;
   tabMyListings: string;
@@ -291,6 +298,24 @@ interface Dictionary {
   voiceMicError: string;
   voiceTooLargeError: string;
   voiceOrTextError: string;
+  videoSectionTitle: string;
+  videoSectionSub: string;
+  videoRecordStart: string;
+  videoRecordModalTitle: string;
+  videoRecordBegin: string;
+  videoRecordStop: string;
+  videoRecordingActive: string;
+  videoUploadButton: string;
+  videoRecordDevice: string;
+  videoRerecord: string;
+  videoRemove: string;
+  videoAttachedBadge: string;
+  videoPlayHeading: string;
+  videoLoadingLabel: string;
+  videoCompressingLabel: string;
+  videoCameraError: string;
+  videoTooLargeError: string;
+  videoInvalidFileError: string;
 }
 
 const en: Dictionary = {
@@ -302,6 +327,10 @@ const en: Dictionary = {
   navVehicles: 'Vehicles',
   navGoods: 'Goods',
   navConnections: 'Orders & Inbox',
+  navConnectionsUser: 'Listings & Inbox',
+  navBuy: 'Buy',
+  navRent: 'Rent',
+  navSell: 'Sell',
   postListing: 'Sell / Post',
   heroTitle: 'Properties, land, vehicles, and goods in one direct marketplace.',
   heroSubtitle:
@@ -358,6 +387,7 @@ const en: Dictionary = {
   signInToConnect: 'Sign in with Google to message this seller directly.',
   signInToOrder: 'Sign in with Google to place an order and receive an instant confirmation receipt.',
   ownListingNotice: 'This is your active listing. Manage incoming orders or edits in Orders & Inbox.',
+  ownListingNoticeUser: 'This is your active listing. Manage edits or buyer messages in Listings & Inbox.',
   showcaseNotice: 'Sample catalog preview. You can place a demo order on the Place Order tab, or post a community listing.',
   quantityLabel: 'Quantity',
   paymentMethodLabel: 'Payment / Settlement Method',
@@ -372,6 +402,7 @@ const en: Dictionary = {
   confirmOrderButton: 'Place Order Now',
   orderConfirmedTitle: 'Order Confirmed',
   orderConfirmedBody: 'Your order is saved and shared with the seller for confirmation.',
+  orderConfirmedBuyerBody: 'Your order has been received and sent directly to the Kas Market administrator for review and processing.',
   viewMyOrders: 'View My Orders',
   specsHeading: 'Key Specifications',
   bedrooms: 'Bedrooms',
@@ -386,6 +417,7 @@ const en: Dictionary = {
   sellerLabel: 'Listed by',
   locationLabel: 'Location',
   connectionsTitle: 'Orders & Seller Hub',
+  connectionsUserTitle: 'My Listings & Messages',
   tabOrders: 'Orders',
   tabSaved: 'Saved',
   tabMyListings: 'My Listings',
@@ -576,6 +608,24 @@ const en: Dictionary = {
   voiceMicError: 'Microphone access is unavailable. You can still upload a short audio file.',
   voiceTooLargeError: 'Audio clip is too large (max ~45 seconds / 160 KB). Please record a shorter clip.',
   voiceOrTextError: 'Please write at least 10 characters in the description or record a voice description.',
+  videoSectionTitle: 'Listing Video (Optional)',
+  videoSectionSub: 'Record a short walkthrough video (up to 30s) or upload a video clip in addition to your photos.',
+  videoRecordStart: 'Record Video',
+  videoRecordModalTitle: 'Record Listing Video',
+  videoRecordBegin: 'Start Recording',
+  videoRecordStop: 'Stop & Save',
+  videoRecordingActive: 'Recording Video...',
+  videoUploadButton: 'Upload Video',
+  videoRecordDevice: 'Use Device Camera',
+  videoRerecord: 'Re-record Video',
+  videoRemove: 'Remove Video',
+  videoAttachedBadge: 'Video',
+  videoPlayHeading: 'Property / Item Video Walkthrough',
+  videoLoadingLabel: 'Loading video walkthrough...',
+  videoCompressingLabel: 'Preparing & optimizing video...',
+  videoCameraError: 'Live video camera is unavailable in this view. Use your device camera or upload a video file.',
+  videoTooLargeError: 'Video file is too large (max ~30 seconds / 2.2 MB after compression). Please record or choose a shorter clip.',
+  videoInvalidFileError: 'Unable to read that video file. Please select an MP4, WebM, or MOV video.',
 };
 
 const am: Dictionary = {
@@ -587,6 +637,10 @@ const am: Dictionary = {
   navVehicles: 'መኪኖች',
   navGoods: 'ዕቃዎች',
   navConnections: 'ትዕዛዞች',
+  navConnectionsUser: 'ዝርዝሮቼ እና መልዕክቶች',
+  navBuy: 'መግዛት',
+  navRent: 'መከራየት',
+  navSell: 'መሸጥ',
   postListing: 'ለመሸጥ ለጥፍ',
   heroTitle: 'ቤቶች፣ አፓርታማ፣ መሬት፣ መኪኖች እና የተለያዩ ዕቃዎች በአንድ ቦታ።',
   heroSubtitle:
@@ -643,6 +697,7 @@ const am: Dictionary = {
   signInToConnect: 'ለሻጭ መልዕክት ለመላክ በGoogle ይግቡ።',
   signInToOrder: 'ትዕዛዝ ለመስጠት እና ደረሰኝ ለማግኘት በGoogle ይግቡ።',
   ownListingNotice: 'ይህ የራስዎ ማስታወቂያ ነው። የገዥ ትዕዛዞችን ከትዕዛዞች ክፍል ያስተዳድሩ።',
+  ownListingNoticeUser: 'ይህ የራስዎ ማስታወቂያ ነው። ማስተካከያዎችን ወይም የገዥ መልዕክቶችን ከዝርዝሮቼ እና መልዕክቶች ክፍል ያስተዳድሩ።',
   showcaseNotice: 'የናሙና ዝርዝር ነው። በትዕዛዝ ትር ላይ በቀጥታ መሞከር ወይም የማህበረሰብ ማስታወቂያ መምረጥ ይችላሉ።',
   quantityLabel: 'ብዛት',
   paymentMethodLabel: 'የክፍያ ዘዴ',
@@ -657,6 +712,7 @@ const am: Dictionary = {
   confirmOrderButton: 'ትዕዛዝ አረጋግጥ',
   orderConfirmedTitle: 'ትዕዛዝዎ ተመዝግቧል',
   orderConfirmedBody: 'ትዕዛዝዎ ተቀምጧል፣ ሻጩ እስኪያረጋግጥ በትዕዛዞች ክፍል መከታተል ይችላሉ።',
+  orderConfirmedBuyerBody: 'ትዕዛዝዎ ተመዝግቦ ለማረጋገጫ ወደ መድረኩ አስተዳዳሪ (Admin) በቀጥታ ተልኳል።',
   viewMyOrders: 'ትዕዛዞቼን ይዩ',
   specsHeading: 'ዝርዝር መረጃ',
   bedrooms: 'መኝታ ክፍሎች',
@@ -671,6 +727,7 @@ const am: Dictionary = {
   sellerLabel: 'አቅራቢ',
   locationLabel: 'አካባቢ',
   connectionsTitle: 'ትዕዛዞች እና የሻጭ ማዕከል',
+  connectionsUserTitle: 'የእኔ ማስታወቂያዎች እና መልዕክቶች',
   tabOrders: 'ትዕዛዞች',
   tabSaved: 'የተቀመጡ',
   tabMyListings: 'የእኔ ማስታወቂያዎች',
@@ -861,6 +918,24 @@ const am: Dictionary = {
   voiceMicError: 'ማይክሮፎን መጠቀም አልተቻለም። በምትኩ አጭር የድምጽ ፋይል መጫን ይችላሉ።',
   voiceTooLargeError: 'የድምጽ ፋይሉ መጠን በዝቷል (ከ45 ሰከንድ / 160 KB ያልበለጠ ይሁን)። እባክዎ አጭር ድምጽ ይቅዱ።',
   voiceOrTextError: 'እባክዎ ቢያንስ 10 ፊደላት መግለጫ ይጻፉ ወይም በድምጽ ይቅዱ።',
+  videoSectionTitle: 'የማስታወቂያ ቪዲዮ (ከፎቶ በተጨማሪ — አማራጭ)',
+  videoSectionSub: 'ከፎቶዎቹ በተጨማሪ እስከ 30 ሰከንድ የሚደርስ አጭር ቪዲዮ በካሜራ ቀርጸው ወይም ከፋይል ይጫኑ።',
+  videoRecordStart: 'ቪዲዮ ቅረጽ',
+  videoRecordModalTitle: 'የማስታወቂያ ቪዲዮ ቅረጻ',
+  videoRecordBegin: 'ቀረጻ ጀምር',
+  videoRecordStop: 'ቀረጻ አቁም እና አስቀምጥ',
+  videoRecordingActive: 'ቪዲዮ በመቅረጽ ላይ...',
+  videoUploadButton: 'ቪዲዮ ጫን',
+  videoRecordDevice: 'በስልክ ካሜራ ቅረጽ',
+  videoRerecord: 'እንደገና ቅረጽ',
+  videoRemove: 'ቪዲዮ አጥፋ',
+  videoAttachedBadge: 'ቪዲዮ',
+  videoPlayHeading: 'የንብረቱ / ዕቃው ቪዲዮ',
+  videoLoadingLabel: 'ቪዲዮው እየተከፈተ ነው...',
+  videoCompressingLabel: 'ቪዲዮው እየተዘጋጀ ነው...',
+  videoCameraError: 'ቀጥታ የቪዲዮ ካሜራ አልተገኘም። የመሳሪያዎን ካሜራ ወይም የቪዲዮ ፋይል መጫን ይችላሉ።',
+  videoTooLargeError: 'የቪዲዮው መጠን በዝቷል (ከ30 ሰከንድ / 2.2 MB ያልበለጠ ይሁን)። እባክዎ አጭር ቪዲዮ ይቅረጹ ወይም ይምረጡ።',
+  videoInvalidFileError: 'ይህን የቪዲዮ ፋይል ማንበብ አልተቻለም። እባክዎ MP4፣ WebM ወይም MOV ቪዲዮ ይምረጡ።',
 };
 
 export const translations: Record<Language, Dictionary> = { en, am };

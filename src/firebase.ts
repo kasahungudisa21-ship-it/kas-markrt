@@ -43,6 +43,12 @@ import {
   SavedItem,
   TenantPreference,
 } from './types';
+import {
+  assembleChunksToBlobUrl,
+  MAX_VIDEO_CHUNKS,
+  parseDataUrl,
+  splitBase64IntoChunks,
+} from './utils/videoProcessing';
 
 export const ADMIN_EMAIL = (
   import.meta.env.VITE_ADMIN_EMAIL || 'kasahungudisa12@gmail.com'
@@ -298,6 +304,18 @@ export function subscribeListings(
           city: String(data.city || ''),
           imageUrl: String(data.imageUrl || ''),
           photoCount: Number(data.photoCount || 1),
+          videoMimeType:
+            typeof data.videoMimeType === 'string' && data.videoMimeType.length > 0
+              ? data.videoMimeType
+              : undefined,
+          videoDurationSec:
+            typeof data.videoDurationSec === 'number' && data.videoDurationSec > 0
+              ? Math.round(data.videoDurationSec)
+              : undefined,
+          videoChunkCount:
+            typeof data.videoChunkCount === 'number' && data.videoChunkCount > 0
+              ? Math.round(data.videoChunkCount)
+              : undefined,
           status: data.status || 'available',
           specs: (data.specs as ListingSpecs) || {},
           createdAtMs: toMillis(data.createdAt),
@@ -491,6 +509,10 @@ export interface ListingInput {
   city: string;
   imageUrl: string;
   photos?: ListingPhoto[];
+  videoDataUrl?: string;
+  videoMimeType?: string;
+  videoDurationSec?: number;
+  videoModified?: boolean;
   specs: ListingSpecs;
   sellerPhone?: string;
 }
@@ -544,6 +566,39 @@ export async function fetchListingPhotos(listingId: string): Promise<ListingPhot
   }
 }
 
+export async function fetchListingVideo(
+  listingId: string,
+  fallbackMimeType = 'video/webm'
+): Promise<string | null> {
+  const cleanId = sanitizeId(listingId);
+  const path = `listings/${cleanId}/videoChunks`;
+  try {
+    const q = query(
+      collection(db, 'listings', cleanId, 'videoChunks'),
+      where('listingId', '==', cleanId)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const chunks = snap.docs
+      .map((d) => {
+        const data = d.data();
+        return {
+          chunkIndex: Number(data.chunkIndex ?? 0),
+          data: String(data.data || ''),
+        };
+      })
+      .filter((c) => c.data.length > 0)
+      .sort((a, b) => a.chunkIndex - b.chunkIndex);
+    if (chunks.length === 0) return null;
+    return assembleChunksToBlobUrl(
+      chunks.map((c) => c.data),
+      fallbackMimeType
+    );
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+  }
+}
+
 export async function createListing(user: User, input: ListingInput): Promise<string> {
   const id = generateValidId('lst');
   const contactId = generateValidId('cnt');
@@ -571,9 +626,22 @@ export async function createListing(user: User, input: ListingInput): Promise<st
     ? Math.min(120, Math.max(1, Math.round(Number(input.descriptionVoiceDurationSec || 1))))
     : 0;
 
+  let videoChunks: string[] = [];
+  let cleanVideoMime = '';
+  let cleanVideoDuration = 0;
+  if (input.videoDataUrl && input.videoDataUrl.trim()) {
+    const parsed = parseDataUrl(input.videoDataUrl);
+    videoChunks = splitBase64IntoChunks(parsed.base64Body);
+    if (videoChunks.length > MAX_VIDEO_CHUNKS) {
+      throw new Error('Video is too large. Please record or upload a shorter clip.');
+    }
+    cleanVideoMime = (input.videoMimeType || parsed.mimeType || 'video/webm').trim().slice(0, 80);
+    cleanVideoDuration = Math.min(120, Math.max(1, Math.round(Number(input.videoDurationSec || 1))));
+  }
+
   try {
     const batch = writeBatch(db);
-    batch.set(doc(db, 'listings', id), {
+    const listingPayload: Record<string, unknown> = {
       ownerId: cleanUid,
       sellerName,
       category: input.category,
@@ -593,7 +661,14 @@ export async function createListing(user: User, input: ListingInput): Promise<st
       specs: cleanSpecs,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    };
+    if (videoChunks.length > 0) {
+      listingPayload.videoDurationSec = cleanVideoDuration;
+      listingPayload.videoChunkCount = videoChunks.length;
+      listingPayload.videoMimeType = cleanVideoMime;
+    }
+
+    batch.set(doc(db, 'listings', id), listingPayload);
 
     cleanPhotos.forEach((p) => {
       batch.set(doc(db, 'listings', id, 'photos', `slot_${p.slotIndex}`), {
@@ -602,6 +677,17 @@ export async function createListing(user: User, input: ListingInput): Promise<st
         slotIndex: p.slotIndex,
         angleLabel: p.angleLabel,
         imageDataUrl: p.imageDataUrl,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    videoChunks.forEach((chunkData, chunkIdx) => {
+      batch.set(doc(db, 'listings', id, 'videoChunks', `chunk_${chunkIdx}`), {
+        listingId: id,
+        ownerId: cleanUid,
+        chunkIndex: chunkIdx,
+        data: chunkData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -665,10 +751,36 @@ export async function updateListingDetails(
           )
         : null;
 
+    const existingVideoSnap =
+      input.videoModified && user
+        ? await getDocs(
+            query(
+              collection(db, 'listings', cleanId, 'videoChunks'),
+              where('listingId', '==', cleanId)
+            )
+          )
+        : null;
+
     const cleanVoiceUrl = (input.descriptionVoiceUrl || '').trim().slice(0, 220000);
     const cleanVoiceDuration = cleanVoiceUrl
       ? Math.min(120, Math.max(1, Math.round(Number(input.descriptionVoiceDurationSec || 1))))
       : 0;
+
+    let nextVideoChunks: string[] = [];
+    let nextVideoMime = '';
+    let nextVideoDuration = 0;
+    if (input.videoModified && input.videoDataUrl && input.videoDataUrl.trim()) {
+      const parsed = parseDataUrl(input.videoDataUrl);
+      nextVideoChunks = splitBase64IntoChunks(parsed.base64Body);
+      if (nextVideoChunks.length > MAX_VIDEO_CHUNKS) {
+        throw new Error('Video is too large. Please record or upload a shorter clip.');
+      }
+      nextVideoMime = (input.videoMimeType || parsed.mimeType || 'video/webm').trim().slice(0, 80);
+      nextVideoDuration = Math.min(
+        120,
+        Math.max(1, Math.round(Number(input.videoDurationSec || 1)))
+      );
+    }
 
     const batch = writeBatch(db);
     const listingUpdatePayload: Record<string, unknown> = {
@@ -687,6 +799,11 @@ export async function updateListingDetails(
     };
     if (hasPhotosUpdate) {
       listingUpdatePayload.photoCount = Math.min(6, Math.max(1, cleanPhotos.length));
+    }
+    if (input.videoModified) {
+      listingUpdatePayload.videoDurationSec = nextVideoDuration;
+      listingUpdatePayload.videoChunkCount = nextVideoChunks.length;
+      listingUpdatePayload.videoMimeType = nextVideoMime;
     }
 
     batch.update(doc(db, 'listings', cleanId), listingUpdatePayload);
@@ -724,6 +841,41 @@ export async function updateListingDetails(
       existingByDocId.forEach((_, docId) => {
         if (!activeDocIds.has(docId)) {
           batch.delete(doc(db, 'listings', cleanId, 'photos', docId));
+        }
+      });
+    }
+
+    if (input.videoModified && user) {
+      const cleanUid = sanitizeId(user.uid);
+      const existingVideoByDocId = new Map<string, boolean>();
+      existingVideoSnap?.docs.forEach((d) => {
+        existingVideoByDocId.set(d.id, true);
+      });
+
+      const activeVideoDocIds = new Set<string>();
+      nextVideoChunks.forEach((chunkData, chunkIdx) => {
+        const docId = `chunk_${chunkIdx}`;
+        activeVideoDocIds.add(docId);
+        if (existingVideoByDocId.has(docId)) {
+          batch.update(doc(db, 'listings', cleanId, 'videoChunks', docId), {
+            data: chunkData,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          batch.set(doc(db, 'listings', cleanId, 'videoChunks', docId), {
+            listingId: cleanId,
+            ownerId: cleanUid,
+            chunkIndex: chunkIdx,
+            data: chunkData,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+      });
+
+      existingVideoByDocId.forEach((_, docId) => {
+        if (!activeVideoDocIds.has(docId)) {
+          batch.delete(doc(db, 'listings', cleanId, 'videoChunks', docId));
         }
       });
     }

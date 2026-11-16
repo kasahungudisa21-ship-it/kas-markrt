@@ -101,7 +101,9 @@ service cloud.firestore {
           'ownerId', 'sellerName', 'category', 'transactionType',
           'title', 'description', 'descriptionVoiceUrl', 'descriptionVoiceDurationSec',
           'price', 'currency', 'pricePeriod',
-          'neighborhood', 'city', 'imageUrl', 'photoCount', 'status', 'specs',
+          'neighborhood', 'city', 'imageUrl', 'photoCount',
+          'videoDurationSec', 'videoChunkCount', 'videoMimeType',
+          'status', 'specs',
           'createdAt', 'updatedAt'
         ])
         && isValidId(data.ownerId)
@@ -123,6 +125,9 @@ service cloud.firestore {
         && data.city is string && data.city.size() >= 2 && data.city.size() <= 60
         && data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 180000
         && (!('photoCount' in data) || (data.photoCount is int && data.photoCount >= 1 && data.photoCount <= 6))
+        && (!('videoDurationSec' in data) || (data.videoDurationSec is int && data.videoDurationSec >= 0 && data.videoDurationSec <= 120))
+        && (!('videoChunkCount' in data) || (data.videoChunkCount is int && data.videoChunkCount >= 0 && data.videoChunkCount <= 16))
+        && (!('videoMimeType' in data) || (data.videoMimeType is string && data.videoMimeType.size() <= 80))
         && data.status in ['available', 'reserved', 'closed']
         && isValidListingSpecs(data.specs)
         && data.createdAt is timestamp
@@ -143,6 +148,21 @@ service cloud.firestore {
         && data.slotIndex is int && data.slotIndex >= 0 && data.slotIndex <= 5
         && data.angleLabel is string && data.angleLabel.size() >= 1 && data.angleLabel.size() <= 80
         && data.imageDataUrl is string && data.imageDataUrl.size() >= 1 && data.imageDataUrl.size() <= 200000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidListingVideoChunk(data) {
+      return data.keys().hasAll([
+          'listingId', 'ownerId', 'chunkIndex', 'data', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'listingId', 'ownerId', 'chunkIndex', 'data', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.listingId)
+        && isValidId(data.ownerId)
+        && data.chunkIndex is int && data.chunkIndex >= 0 && data.chunkIndex <= 15
+        && data.data is string && data.data.size() >= 1 && data.data.size() <= 200000
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
     }
@@ -394,7 +414,9 @@ service cloud.firestore {
           incoming().diff(existing()).affectedKeys().hasOnly([
             'title', 'description', 'descriptionVoiceUrl', 'descriptionVoiceDurationSec',
             'price', 'currency', 'pricePeriod',
-            'neighborhood', 'city', 'imageUrl', 'photoCount', 'specs', 'updatedAt'
+            'neighborhood', 'city', 'imageUrl', 'photoCount',
+            'videoDurationSec', 'videoChunkCount', 'videoMimeType',
+            'specs', 'updatedAt'
           ])
           || incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
         );
@@ -428,6 +450,40 @@ service cloud.firestore {
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly(['angleLabel', 'imageDataUrl', 'updatedAt']);
         allow delete: if isVerified() && isValidId(listingId) && isValidId(photoId)
+          && (isAdmin() || (
+            existing().ownerId == request.auth.uid
+            && exists(/databases/$(database)/documents/listings/$(listingId))
+            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+          ));
+      }
+
+      // Optional chunked walkthrough video (up to 15 chunks x 200 KB)
+      match /videoChunks/{chunkId} {
+        allow get: if isValidId(listingId) && isValidId(chunkId);
+        allow list: if isValidId(listingId) && resource.data.listingId == listingId;
+        allow create: if isVerified() && isValidId(listingId) && isValidId(chunkId)
+          && chunkId.matches('^chunk_([0-9]|1[0-5])$')
+          && isValidListingVideoChunk(incoming())
+          && incoming().listingId == listingId
+          && incoming().ownerId == request.auth.uid
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && existsAfter(/databases/$(database)/documents/listings/$(listingId))
+          && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid;
+        allow update: if isVerified() && isValidId(listingId) && isValidId(chunkId)
+          && isValidListingVideoChunk(incoming())
+          && (isAdmin() || (
+            existing().ownerId == request.auth.uid
+            && exists(/databases/$(database)/documents/listings/$(listingId))
+            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+          ))
+          && incoming().listingId == existing().listingId
+          && incoming().ownerId == existing().ownerId
+          && incoming().chunkIndex == existing().chunkIndex
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['data', 'updatedAt']);
+        allow delete: if isVerified() && isValidId(listingId) && isValidId(chunkId)
           && (isAdmin() || (
             existing().ownerId == request.auth.uid
             && exists(/databases/$(database)/documents/listings/$(listingId))
@@ -474,12 +530,11 @@ service cloud.firestore {
         );
     }
 
-    // Private buyer orders and bookings (raw phones kept strictly in contactDirectory for admin)
+    // Admin-only private buyer orders and bookings (verified buyers can create; only admin can view/manage)
     match /orders/{orderId} {
-      allow get: if isSignedIn() && isValidId(orderId)
-        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn()
-        && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdminEmail());
+      allow get: if isAdmin() && isValidId(orderId);
+      allow list: if isAdminEmail()
+        && resource.data.status in ['pending', 'confirmed', 'completed', 'cancelled'];
       allow create: if isVerified() && isValidId(orderId)
         && isValidOrder(incoming())
         && incoming().buyerId == request.auth.uid
@@ -498,7 +553,7 @@ service cloud.firestore {
         );
       allow update: if isVerified() && isValidId(orderId)
         && isValidOrder(incoming())
-        && (isAdmin() || (existing().status != 'completed' && existing().status != 'cancelled'))
+        && isAdmin()
         && incoming().orderNumber == existing().orderNumber
         && incoming().listingId == existing().listingId
         && incoming().sellerId == existing().sellerId
@@ -509,14 +564,8 @@ service cloud.firestore {
         && incoming().currency == existing().currency
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
-        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
-        && (
-          isAdmin()
-          || (existing().sellerId == request.auth.uid && incoming().status in ['confirmed', 'completed', 'cancelled'])
-          || (existing().buyerId == request.auth.uid && existing().status == 'pending' && incoming().status == 'cancelled')
-        );
-      allow delete: if isVerified() && isValidId(orderId)
-        && (isAdmin() || existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if isVerified() && isValidId(orderId) && isAdmin();
     }
 
     // Public buyer wanted requests (no PII)
@@ -552,12 +601,11 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(contactId);
     }
 
-    // Real-time order notifications (seller, buyer, and verified admin)
+    // Admin-only real-time order notifications (verified buyers create on order placement; only admin views/manages)
     match /notifications/{notificationId} {
-      allow get: if isSignedIn() && isValidId(notificationId)
-        && (existing().recipientId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn()
-        && (resource.data.recipientId == request.auth.uid || isAdminEmail());
+      allow get: if isAdmin() && isValidId(notificationId);
+      allow list: if isAdminEmail()
+        && resource.data.eventType in ['order_placed', 'order_confirmed', 'order_completed', 'order_cancelled'];
       allow create: if isVerified() && isValidId(notificationId)
         && isValidNotification(incoming())
         && incoming().actorId == request.auth.uid
@@ -567,7 +615,7 @@ service cloud.firestore {
         && isValidOrderNotificationCreate(incoming());
       allow update: if isVerified() && isValidId(notificationId)
         && isValidNotification(incoming())
-        && (existing().recipientId == request.auth.uid || isAdmin())
+        && isAdmin()
         && incoming().recipientId == existing().recipientId
         && incoming().actorId == existing().actorId
         && incoming().actorName == existing().actorName
@@ -581,8 +629,7 @@ service cloud.firestore {
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
         && incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'updatedAt']);
-      allow delete: if isVerified() && isValidId(notificationId)
-        && (existing().recipientId == request.auth.uid || isAdmin());
+      allow delete: if isVerified() && isValidId(notificationId) && isAdmin();
     }
   }
 }

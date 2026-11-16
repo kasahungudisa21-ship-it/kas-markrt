@@ -4,6 +4,7 @@ import { BellRing, Building2, Car, Globe, LogOut, MapPin, Package, Search, X } f
 import { BuyerView } from './components/BuyerView';
 import { ConnectionsTab, ConnectionsView } from './components/ConnectionsView';
 import { DashboardTheme, DashboardView } from './components/DashboardView';
+import { KasLogo } from './components/KasLogo';
 import { ListingCard } from './components/ListingCard';
 import { ListingDetailModal } from './components/ListingDetailModal';
 import { ListingFormModal } from './components/ListingFormModal';
@@ -26,8 +27,6 @@ import {
   subscribeListings,
   subscribeSavedItems,
   subscribeUserInquiries,
-  subscribeUserNotifications,
-  subscribeUserOrders,
   syncUserProfile,
   toggleSavedListing,
 } from './firebase';
@@ -54,6 +53,7 @@ type SortOrder = 'newest' | 'price_asc' | 'price_desc';
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
   const [activeNav, setActiveNav] = useState<NavSection>('explore');
+  const [buyerMode, setBuyerMode] = useState<TransactionType>('sale');
   const [dashboardTheme, setDashboardTheme] = useState<DashboardTheme>('cobalt');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [txFilter, setTxFilter] = useState<TxFilter>('all');
@@ -176,24 +176,19 @@ export default function App() {
         // Logged in handleFirestoreError
       }
     );
-    const unsubOrders = isAdmin
-      ? subscribeAdminOrders(
-          (items) => {
-            setOrders(items);
-          },
-          () => {
-            // Logged in handleFirestoreError
-          }
-        )
-      : subscribeUserOrders(
-          user.uid,
-          (items) => {
-            setOrders(items);
-          },
-          () => {
-            // Logged in handleFirestoreError
-          }
-        );
+    let unsubOrders: () => void = () => {};
+    if (isAdmin) {
+      unsubOrders = subscribeAdminOrders(
+        (items) => {
+          setOrders(items);
+        },
+        () => {
+          // Logged in handleFirestoreError
+        }
+      );
+    } else {
+      setOrders([]);
+    }
 
     const unsubContacts = isAdmin
       ? subscribeContactDirectory(
@@ -243,13 +238,15 @@ export default function App() {
       }
     };
 
-    const unsubNotifications = isAdmin
-      ? subscribeAdminNotifications(handleNotificationsSnapshot, () => {
-          // Logged in handleFirestoreError
-        })
-      : subscribeUserNotifications(user.uid, handleNotificationsSnapshot, () => {
-          // Logged in handleFirestoreError
-        });
+    let unsubNotifications: () => void = () => {};
+    if (isAdmin) {
+      unsubNotifications = subscribeAdminNotifications(handleNotificationsSnapshot, () => {
+        // Logged in handleFirestoreError
+      });
+    } else {
+      setNotifications([]);
+      setActiveToasts([]);
+    }
 
     return () => {
       cancelled = true;
@@ -269,13 +266,13 @@ export default function App() {
   }, [firestoreListings, user]);
 
   const incomingOrdersCount = useMemo(() => {
-    if (!user) return 0;
+    if (!user || !isAdmin) return 0;
     return orders.filter((o) => o.sellerId === user.uid).length;
-  }, [orders, user]);
+  }, [orders, user, isAdmin]);
 
   const unreadNotificationsCount = useMemo(
-    () => notifications.filter((n) => !n.isRead).length,
-    [notifications]
+    () => (isAdmin ? notifications.filter((n) => !n.isRead).length : 0),
+    [notifications, isAdmin]
   );
 
   useEffect(() => {
@@ -385,6 +382,11 @@ export default function App() {
     }
   };
 
+  const handleOpenBuyerMode = (mode: TransactionType) => {
+    setBuyerMode(mode);
+    setActiveNav('buyer');
+  };
+
   const handleSelectListing = (listing: Listing, initialTab: 'order' | 'message' = 'order') => {
     setSelectedInitialTab(initialTab);
     setSelectedListing(listing);
@@ -456,7 +458,7 @@ export default function App() {
       : dashboardTheme === 'amber'
       ? 'bg-neutral-950 text-neutral-50'
       : 'bg-slate-950 text-slate-50'
-    : 'bg-zinc-50 text-zinc-900';
+    : 'bg-[#EDE8DF] text-[#122620]';
 
   const footerThemeClass = isDash
     ? dashboardTheme === 'indigo'
@@ -464,17 +466,21 @@ export default function App() {
       : dashboardTheme === 'amber'
       ? 'bg-neutral-900 border-neutral-800 text-neutral-400'
       : 'bg-slate-900 border-slate-800 text-slate-400'
-    : 'bg-white border-zinc-200 text-zinc-500';
+    : 'bg-[#0B1F1A] border-[#1A4338] text-[#B9D2C9]';
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors ${rootWrapperBg}`}>
       <Navbar
         lang={lang}
         activeNav={activeNav}
+        activeBuyerMode={buyerMode}
         dashboardTheme={dashboardTheme}
-        unreadNotifCount={unreadNotificationsCount}
+        unreadNotifCount={isAdmin ? unreadNotificationsCount : 0}
+        isAdmin={isAdmin}
         user={user}
         onSelectNav={handleSelectNav}
+        onOpenBuyMode={() => handleOpenBuyerMode('sale')}
+        onOpenRentMode={() => handleOpenBuyerMode('rent')}
         onOpenSellPage={() => setActiveNav('sell')}
         onSignIn={handleSignIn}
         onSignOut={handleSignOut}
@@ -493,14 +499,14 @@ export default function App() {
             allListings={combinedListings}
             listingsLoaded={listingsLoaded}
             savedIds={effectiveSavedIds}
-            orders={orders}
-            notifications={notifications}
+            orders={isAdmin ? orders : []}
+            notifications={isAdmin ? notifications : []}
             buyerRequests={buyerRequests}
             onSelectListing={handleSelectListing}
             onOpenSellPage={() => setActiveNav('sell')}
             onOpenBuyerStudio={() => setActiveNav('buyer')}
             onOpenNotifications={() => {
-              setConnectionsRequestedTab('notifications');
+              setConnectionsRequestedTab(isAdmin ? 'notifications' : 'listings');
               setActiveNav('connections');
             }}
             onDeleteListing={handleDeleteListing}
@@ -512,13 +518,18 @@ export default function App() {
             lang={lang}
             user={user}
             isAdmin={isAdmin}
+            requestedTransactionType={buyerMode}
+            onTransactionTypeChange={setBuyerMode}
             savedPhone={savedPhone}
             allListings={combinedListings}
             savedIds={effectiveSavedIds}
-            myOrders={orders.filter((o) => user && o.buyerId === user.uid)}
+            myOrders={isAdmin ? orders.filter((o) => user && o.buyerId === user.uid) : []}
             buyerRequests={buyerRequests}
             onBackToBrowse={() => setActiveNav('explore')}
-            onGoToOrders={() => setActiveNav('connections')}
+            onGoToOrders={() => {
+              setConnectionsRequestedTab(isAdmin ? 'orders' : 'saved');
+              setActiveNav('connections');
+            }}
             onSelectListing={handleSelectListing}
             onToggleSave={handleToggleSave}
             onSignIn={handleSignIn}
@@ -528,11 +539,15 @@ export default function App() {
           <SellView
             lang={lang}
             user={user}
+            isAdmin={isAdmin}
             savedPhone={savedPhone}
             myListings={myListings}
-            incomingOrdersCount={incomingOrdersCount}
+            incomingOrdersCount={isAdmin ? incomingOrdersCount : 0}
             onBackToBrowse={() => setActiveNav('explore')}
-            onGoToOrders={() => setActiveNav('connections')}
+            onGoToOrders={() => {
+              setConnectionsRequestedTab(isAdmin ? 'orders' : 'listings');
+              setActiveNav('connections');
+            }}
             onSignIn={handleSignIn}
             onSignOut={handleSignOut}
           />
@@ -544,8 +559,8 @@ export default function App() {
             allListings={combinedListings}
             savedIds={effectiveSavedIds}
             inquiries={inquiries}
-            orders={orders}
-            notifications={notifications}
+            orders={isAdmin ? orders : []}
+            notifications={isAdmin ? notifications : []}
             requestedTab={connectionsRequestedTab}
             onClearRequestedTab={() => setConnectionsRequestedTab(null)}
             onBack={() => setActiveNav('explore')}
@@ -563,22 +578,22 @@ export default function App() {
         ) : (
           <>
             {/* Section 1: Architectural Hero Split + 4-Column Category Strip */}
-            <section className="bg-white border-b border-zinc-200">
+            <section className="bg-gradient-to-br from-[#0D332A] via-[#114237] to-[#143A4A] border-b border-[#225C4E] text-[#FCF9F2]">
               <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-10 lg:py-14 space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
                   <div className="lg:col-span-6 flex flex-col justify-between gap-6 py-1">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs font-medium text-zinc-500">
+                        <span className="text-xs font-semibold text-amber-300 tracking-wide">
                           {t.heroLocationCaption}
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             type="button"
                             onClick={() => setLang((prev) => (prev === 'en' ? 'am' : 'en'))}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-xs font-medium text-zinc-800 transition-colors whitespace-nowrap shrink-0"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#2B6E5E] bg-[#164A3E] hover:bg-[#1D5C4E] text-xs font-medium text-[#FCF9F2] transition-colors whitespace-nowrap shrink-0"
                           >
-                            <Globe className="w-3.5 h-3.5 text-emerald-800" />
+                            <Globe className="w-3.5 h-3.5 text-amber-300" />
                             <span>{lang === 'en' ? 'አማርኛ' : 'English'}</span>
                           </button>
 
@@ -587,14 +602,14 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={() => setActiveNav('connections')}
-                                className="px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-800 truncate max-w-[140px]"
+                                className="px-3 py-1.5 rounded-lg border border-[#2B6E5E] bg-[#164A3E] hover:bg-[#1D5C4E] text-xs font-medium text-emerald-100 truncate max-w-[140px]"
                               >
                                 {user.displayName || t.signedInAs}
                               </button>
                               <button
                                 type="button"
                                 onClick={handleSignOut}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-medium text-zinc-700 transition-colors whitespace-nowrap shrink-0"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#2B6E5E] bg-[#164A3E] hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-emerald-100 transition-colors whitespace-nowrap shrink-0"
                               >
                                 <LogOut className="w-3.5 h-3.5" />
                                 <span>{t.signOut}</span>
@@ -604,7 +619,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={handleSignIn}
-                              className="px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-800 whitespace-nowrap shrink-0"
+                              className="px-3 py-1.5 rounded-lg border border-amber-300/60 bg-amber-400/15 hover:bg-amber-400/25 text-xs font-semibold text-amber-200 whitespace-nowrap shrink-0"
                             >
                               {t.signInGoogle}
                             </button>
@@ -612,17 +627,17 @@ export default function App() {
                         </div>
                       </div>
 
-                      <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold tracking-tight text-zinc-900 leading-[1.12] [text-wrap:balance]">
+                      <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-bold tracking-tight text-[#FCF8EE] leading-[1.12] [text-wrap:balance]">
                         {t.heroTitle}
                       </h1>
 
-                      <p className="text-[15px] sm:text-base text-zinc-600 leading-relaxed max-w-xl">
+                      <p className="text-[15px] sm:text-base text-[#CCE5DC] leading-relaxed max-w-xl">
                         {t.heroSubtitle}
                       </p>
                     </div>
 
                     <div className="space-y-3 pt-2">
-                      <div className="inline-flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit">
+                      <div className="inline-flex items-center gap-1 p-1 bg-[#08221C] border border-[#215A4C] rounded-lg w-fit">
                         {(
                           [
                             { key: 'all', label: t.txAll },
@@ -636,8 +651,8 @@ export default function App() {
                             onClick={() => setTxFilter(opt.key)}
                             className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
                               txFilter === opt.key
-                                ? 'bg-emerald-800 text-white shadow-sm'
-                                : 'text-zinc-600 hover:text-zinc-900'
+                                ? 'bg-amber-400 text-[#0B2620] shadow-sm'
+                                : 'text-emerald-100 hover:text-white'
                             }`}
                           >
                             {opt.label}
@@ -654,18 +669,18 @@ export default function App() {
                         className="flex flex-col sm:flex-row gap-2.5"
                       >
                         <div className="relative flex-1">
-                          <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <Search className="w-4 h-4 text-[#125140] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="search"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder={t.searchPlaceholder}
-                            className="w-full h-11 pl-10 pr-4 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                            className="w-full h-11 pl-10 pr-4 rounded-lg border border-[#B9D0C6] bg-[#FFFDF8] text-sm text-[#102620] placeholder:text-[#5C7069] focus:outline-none focus:ring-2 focus:ring-amber-400"
                           />
                         </div>
                         <button
                           type="submit"
-                          className="h-11 px-6 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-medium transition-colors whitespace-nowrap shrink-0"
+                          className="h-11 px-6 rounded-lg bg-amber-400 hover:bg-amber-300 text-[#0A231D] text-sm font-bold transition-colors whitespace-nowrap shrink-0 shadow-sm"
                         >
                           {t.searchButton}
                         </button>
@@ -673,22 +688,22 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="lg:col-span-6 relative rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 min-h-[260px] lg:min-h-[340px]">
+                  <div className="lg:col-span-6 relative rounded-xl overflow-hidden bg-[#0A2620] border border-[#256254] min-h-[260px] lg:min-h-[340px]">
                     <ResilientImage
                       src={HERO_IMAGE}
                       alt={t.heroTitle}
                       category="house"
                       className="w-full h-full lg:h-full object-cover"
                     />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent p-5 sm:p-6">
-                      <p className="text-xs font-medium text-zinc-200">
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 sm:p-6">
+                      <p className="text-xs font-semibold text-amber-200">
                         {t.stripPropertiesTitle} · {t.stripLandTitle} · {t.stripVehiclesTitle}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* 4-Column Quick Category Strip */}
+                {/* 4-Column Quick Category Strip — Distinct Domain Color Surfaces */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <button
                     type="button"
@@ -696,20 +711,46 @@ export default function App() {
                       setCategoryFilter('properties');
                       setActiveNav('properties');
                     }}
-                    className={`p-4 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
+                    className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3.5 ${
                       categoryFilter === 'properties' ||
                       categoryFilter === 'apartment' ||
                       categoryFilter === 'house'
-                        ? 'border-emerald-800 bg-emerald-50/60'
-                        : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                        ? 'border-emerald-300 bg-[#145C49] text-white ring-1 ring-emerald-300'
+                        : 'border-[#A7D9C6] bg-[#E3F5EE] hover:bg-[#D2EFE4]'
                     }`}
                   >
-                    <Building2 className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+                    <Building2
+                      className={`w-5 h-5 shrink-0 mt-0.5 ${
+                        categoryFilter === 'properties' ||
+                        categoryFilter === 'apartment' ||
+                        categoryFilter === 'house'
+                          ? 'text-emerald-200'
+                          : 'text-[#0F5E48]'
+                      }`}
+                    />
                     <div>
-                      <div className="text-sm font-semibold text-zinc-900">
+                      <div
+                        className={`text-sm font-bold ${
+                          categoryFilter === 'properties' ||
+                          categoryFilter === 'apartment' ||
+                          categoryFilter === 'house'
+                            ? 'text-white'
+                            : 'text-[#0B3B2E]'
+                        }`}
+                      >
                         {t.stripPropertiesTitle}
                       </div>
-                      <div className="text-xs text-zinc-500 mt-0.5">{t.stripPropertiesSub}</div>
+                      <div
+                        className={`text-xs mt-0.5 ${
+                          categoryFilter === 'properties' ||
+                          categoryFilter === 'apartment' ||
+                          categoryFilter === 'house'
+                            ? 'text-emerald-100'
+                            : 'text-[#1F5947]'
+                        }`}
+                      >
+                        {t.stripPropertiesSub}
+                      </div>
                     </div>
                   </button>
 
@@ -719,16 +760,32 @@ export default function App() {
                       setCategoryFilter('land');
                       setActiveNav('properties');
                     }}
-                    className={`p-4 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
+                    className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3.5 ${
                       categoryFilter === 'land'
-                        ? 'border-emerald-800 bg-emerald-50/60'
-                        : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                        ? 'border-amber-300 bg-[#92400E] text-white ring-1 ring-amber-300'
+                        : 'border-[#E7C48B] bg-[#FDF1DB] hover:bg-[#FAE6C3]'
                     }`}
                   >
-                    <MapPin className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+                    <MapPin
+                      className={`w-5 h-5 shrink-0 mt-0.5 ${
+                        categoryFilter === 'land' ? 'text-amber-200' : 'text-[#B45309]'
+                      }`}
+                    />
                     <div>
-                      <div className="text-sm font-semibold text-zinc-900">{t.stripLandTitle}</div>
-                      <div className="text-xs text-zinc-500 mt-0.5">{t.stripLandSub}</div>
+                      <div
+                        className={`text-sm font-bold ${
+                          categoryFilter === 'land' ? 'text-white' : 'text-[#5C2D0C]'
+                        }`}
+                      >
+                        {t.stripLandTitle}
+                      </div>
+                      <div
+                        className={`text-xs mt-0.5 ${
+                          categoryFilter === 'land' ? 'text-amber-100' : 'text-[#7C461B]'
+                        }`}
+                      >
+                        {t.stripLandSub}
+                      </div>
                     </div>
                   </button>
 
@@ -738,18 +795,32 @@ export default function App() {
                       setCategoryFilter('vehicle');
                       setActiveNav('vehicles');
                     }}
-                    className={`p-4 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
+                    className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3.5 ${
                       categoryFilter === 'vehicle'
-                        ? 'border-emerald-800 bg-emerald-50/60'
-                        : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                        ? 'border-sky-300 bg-[#1E40AF] text-white ring-1 ring-sky-300'
+                        : 'border-[#AECCEF] bg-[#E5F0FC] hover:bg-[#D5E6FA]'
                     }`}
                   >
-                    <Car className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+                    <Car
+                      className={`w-5 h-5 shrink-0 mt-0.5 ${
+                        categoryFilter === 'vehicle' ? 'text-sky-200' : 'text-[#1D4ED8]'
+                      }`}
+                    />
                     <div>
-                      <div className="text-sm font-semibold text-zinc-900">
+                      <div
+                        className={`text-sm font-bold ${
+                          categoryFilter === 'vehicle' ? 'text-white' : 'text-[#142F66]'
+                        }`}
+                      >
                         {t.stripVehiclesTitle}
                       </div>
-                      <div className="text-xs text-zinc-500 mt-0.5">{t.stripVehiclesSub}</div>
+                      <div
+                        className={`text-xs mt-0.5 ${
+                          categoryFilter === 'vehicle' ? 'text-sky-100' : 'text-[#294A87]'
+                        }`}
+                      >
+                        {t.stripVehiclesSub}
+                      </div>
                     </div>
                   </button>
 
@@ -759,16 +830,32 @@ export default function App() {
                       setCategoryFilter('goods');
                       setActiveNav('goods');
                     }}
-                    className={`p-4 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
+                    className={`p-4 rounded-xl border text-left transition-all flex items-start gap-3.5 ${
                       categoryFilter === 'goods'
-                        ? 'border-emerald-800 bg-emerald-50/60'
-                        : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                        ? 'border-rose-300 bg-[#9D174D] text-white ring-1 ring-rose-300'
+                        : 'border-[#DFB9CE] bg-[#F8EAF2] hover:bg-[#F2DCE8]'
                     }`}
                   >
-                    <Package className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+                    <Package
+                      className={`w-5 h-5 shrink-0 mt-0.5 ${
+                        categoryFilter === 'goods' ? 'text-rose-200' : 'text-[#9D174D]'
+                      }`}
+                    />
                     <div>
-                      <div className="text-sm font-semibold text-zinc-900">{t.stripGoodsTitle}</div>
-                      <div className="text-xs text-zinc-500 mt-0.5">{t.stripGoodsSub}</div>
+                      <div
+                        className={`text-sm font-bold ${
+                          categoryFilter === 'goods' ? 'text-white' : 'text-[#591432]'
+                        }`}
+                      >
+                        {t.stripGoodsTitle}
+                      </div>
+                      <div
+                        className={`text-xs mt-0.5 ${
+                          categoryFilter === 'goods' ? 'text-rose-100' : 'text-[#782B4E]'
+                        }`}
+                      >
+                        {t.stripGoodsSub}
+                      </div>
                     </div>
                   </button>
                 </div>
@@ -780,8 +867,8 @@ export default function App() {
               id="marketplace-catalog"
               className="max-w-[1280px] mx-auto px-4 sm:px-6 py-10 space-y-6"
             >
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-zinc-200">
-                <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg overflow-x-auto max-w-full">
+              <div className="bg-[#F9F6F0] border border-[#D8D0C1] rounded-2xl p-3.5 sm:p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-1 p-1 bg-[#E5DED0] rounded-lg overflow-x-auto max-w-full">
                   {(
                     [
                       { key: 'all', label: t.allCategories },
@@ -796,10 +883,10 @@ export default function App() {
                       key={tab.key}
                       type="button"
                       onClick={() => setCategoryFilter(tab.key)}
-                      className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                      className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
                         categoryFilter === tab.key
-                          ? 'bg-white text-zinc-900 shadow-sm'
-                          : 'text-zinc-600 hover:text-zinc-900'
+                          ? 'bg-[#0F4C3A] text-[#FCF9F2] shadow-sm'
+                          : 'text-[#394A44] hover:text-[#0F3D32] hover:bg-[#EFE9DC]'
                       }`}
                     >
                       {tab.label}
@@ -807,8 +894,8 @@ export default function App() {
                   ))}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-1 p-1 bg-[#E5DED0] rounded-lg">
                     {(
                       [
                         { key: 'all', label: t.txAll },
@@ -820,10 +907,10 @@ export default function App() {
                         key={opt.key}
                         type="button"
                         onClick={() => setTxFilter(opt.key)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
                           txFilter === opt.key
-                            ? 'bg-white text-zinc-900 shadow-sm'
-                            : 'text-zinc-600 hover:text-zinc-900'
+                            ? 'bg-[#B45309] text-white shadow-sm'
+                            : 'text-[#394A44] hover:text-[#5C2D0C]'
                         }`}
                       >
                         {opt.label}
@@ -842,7 +929,7 @@ export default function App() {
                         aria-label={t.roomClassLabel}
                         value={roomClassFilter}
                         onChange={(e) => setRoomClassFilter(e.target.value as 'all' | RoomClass)}
-                        className="h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                        className="h-9 px-3 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-xs font-semibold text-[#173028] focus:outline-none focus:ring-2 focus:ring-emerald-800"
                       >
                         <option value="all">{t.roomClassAll}</option>
                         <option value="1_class">{t.roomClass1}</option>
@@ -858,7 +945,7 @@ export default function App() {
                             e.target.value as 'all' | 'late' | 'bale_tedar'
                           )
                         }
-                        className="h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                        className="h-9 px-3 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-xs font-semibold text-[#173028] focus:outline-none focus:ring-2 focus:ring-emerald-800"
                       >
                         <option value="all">{t.tenantPrefAll}</option>
                         <option value="late">{t.tenantPrefLate}</option>
@@ -868,7 +955,7 @@ export default function App() {
                   )}
 
                   <div className="relative">
-                    <MapPin className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <MapPin className="w-3.5 h-3.5 text-[#B45309] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       list="browse-location-suggestions"
@@ -876,14 +963,14 @@ export default function App() {
                       value={locationFilter}
                       onChange={(e) => setLocationFilter(e.target.value)}
                       placeholder={t.locationFilterPlaceholder}
-                      className="h-9 w-44 sm:w-48 pl-8 pr-7 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                      className="h-9 w-44 sm:w-48 pl-8 pr-7 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-xs font-medium text-[#173028] placeholder:text-[#6B665A] focus:outline-none focus:ring-2 focus:ring-emerald-800"
                     />
                     {locationFilter && (
                       <button
                         type="button"
                         aria-label="Clear location filter"
                         onClick={() => setLocationFilter('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#6B665A] hover:text-[#173028]"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -899,7 +986,7 @@ export default function App() {
                     aria-label="Sort listings"
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                    className="h-9 px-3 rounded-lg border border-zinc-200 bg-white text-xs font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                    className="h-9 px-3 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-xs font-semibold text-[#173028] focus:outline-none focus:ring-2 focus:ring-emerald-800"
                   >
                     <option value="newest">{t.sortNewest}</option>
                     <option value="price_asc">{t.sortPriceAsc}</option>
@@ -908,8 +995,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-zinc-500">
-                <span className="tabular-nums">
+              <div className="flex items-center justify-between text-xs">
+                <span className="tabular-nums font-semibold text-[#144537]">
                   {filteredListings.length} {t.resultsCount}
                 </span>
                 {(categoryFilter !== 'all' ||
@@ -921,7 +1008,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="font-medium text-emerald-800 hover:underline"
+                    className="font-semibold text-[#B45309] hover:text-[#78350F] hover:underline"
                   >
                     {t.resetFilters}
                   </button>
@@ -929,7 +1016,7 @@ export default function App() {
               </div>
 
               {dataError && (
-                <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-900">
+                <div className="p-4 rounded-xl border border-amber-300 bg-amber-100 text-xs font-medium text-amber-950">
                   {dataError}
                 </div>
               )}
@@ -939,20 +1026,20 @@ export default function App() {
                   {[1, 2, 3].map((n) => (
                     <div
                       key={n}
-                      className="bg-white border border-zinc-200 rounded-xl overflow-hidden animate-pulse"
+                      className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl overflow-hidden animate-pulse"
                     >
-                      <div className="aspect-[4/3] bg-zinc-200" />
+                      <div className="aspect-[4/3] bg-[#DFD7C8]" />
                       <div className="p-5 space-y-3">
-                        <div className="h-3 bg-zinc-200 rounded w-1/2" />
-                        <div className="h-4 bg-zinc-200 rounded w-3/4" />
-                        <div className="h-3 bg-zinc-200 rounded w-2/3" />
+                        <div className="h-3 bg-[#E3DCCE] rounded w-1/2" />
+                        <div className="h-4 bg-[#E3DCCE] rounded w-3/4" />
+                        <div className="h-3 bg-[#E3DCCE] rounded w-2/3" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : filteredListings.length === 0 ? (
-                <div className="bg-white border border-zinc-200 rounded-xl p-12 text-center space-y-4">
-                  <p className="text-sm text-zinc-600">
+                <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-12 text-center space-y-4">
+                  <p className="text-sm font-medium text-[#344A43]">
                     {firestoreListings.length === 0
                       ? lang === 'am'
                         ? 'እስካሁን የተለጠፈ ማስታወቂያ የለም። የመጀመሪያውን ትክክለኛ ማስታወቂያ ይለጥፉ!'
@@ -963,7 +1050,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setActiveNav('sell')}
-                      className="px-5 py-2.5 rounded-lg bg-emerald-800 text-white text-xs font-medium hover:bg-emerald-900"
+                      className="px-5 py-2.5 rounded-lg bg-[#0F4C3A] text-white text-xs font-semibold hover:bg-[#0B3B2D]"
                     >
                       {t.postListing}
                     </button>
@@ -971,7 +1058,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={handleResetFilters}
-                      className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-xs font-medium hover:bg-zinc-800"
+                      className="px-4 py-2 rounded-lg bg-[#9A3412] text-white text-xs font-semibold hover:bg-[#7C2D12]"
                     >
                       {t.resetFilters}
                     </button>
@@ -994,23 +1081,23 @@ export default function App() {
             </section>
 
             {/* Section 3: How Sellers Post & Buyers Order */}
-            <section className="bg-white border-t border-zinc-200">
+            <section className="bg-[#132926] border-t border-[#214640] text-[#F5EFE3]">
               <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-14 space-y-8">
-                <h2 className="text-2xl font-bold text-zinc-900 [text-wrap:balance]">
+                <h2 className="text-2xl font-bold text-amber-300 [text-wrap:balance]">
                   {t.howItWorksTitle}
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="space-y-2">
-                    <h3 className="text-base font-semibold text-zinc-900">{t.step1Title}</h3>
-                    <p className="text-sm text-zinc-600 leading-relaxed">{t.step1Body}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="p-5 rounded-xl bg-[#1A3934] border border-[#2B5D55] space-y-2">
+                    <h3 className="text-base font-bold text-emerald-300">{t.step1Title}</h3>
+                    <p className="text-sm text-[#D6EAE3] leading-relaxed">{t.step1Body}</p>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-base font-semibold text-zinc-900">{t.step2Title}</h3>
-                    <p className="text-sm text-zinc-600 leading-relaxed">{t.step2Body}</p>
+                  <div className="p-5 rounded-xl bg-[#1B3344] border border-[#2D526C] space-y-2">
+                    <h3 className="text-base font-bold text-sky-300">{t.step2Title}</h3>
+                    <p className="text-sm text-[#D7E6F2] leading-relaxed">{t.step2Body}</p>
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-base font-semibold text-zinc-900">{t.step3Title}</h3>
-                    <p className="text-sm text-zinc-600 leading-relaxed">{t.step3Body}</p>
+                  <div className="p-5 rounded-xl bg-[#2E271E] border border-[#564733] space-y-2">
+                    <h3 className="text-base font-bold text-amber-300">{t.step3Title}</h3>
+                    <p className="text-sm text-[#EAE0D0] leading-relaxed">{t.step3Body}</p>
                   </div>
                 </div>
               </div>
@@ -1021,42 +1108,43 @@ export default function App() {
 
       <footer className={`border-t transition-colors ${footerThemeClass}`}>
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <span>
-            {t.brand} · {t.footerNote}
+          <span className="inline-flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
+            <KasLogo variant={isDash ? dashboardTheme : 'emerald'} size="sm" />
+            <span>· {t.footerNote}</span>
           </span>
           <div className="flex flex-wrap items-center gap-6">
             <button
               type="button"
               onClick={() => setLang((prev) => (prev === 'en' ? 'am' : 'en'))}
-              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-zinc-900 transition-colors'}
+              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
             >
               {lang === 'en' ? 'አማርኛ' : 'English'}
             </button>
             <button
               type="button"
               onClick={() => setActiveNav('dashboard')}
-              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-zinc-900 transition-colors'}
+              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
             >
               {t.navDashboard}
             </button>
             <button
               type="button"
               onClick={() => setActiveNav('buyer')}
-              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-zinc-900 transition-colors'}
+              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
             >
               {t.navBuyerStudio}
             </button>
             <button
               type="button"
               onClick={() => setActiveNav('sell')}
-              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-zinc-900 transition-colors'}
+              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
             >
               {t.postListing}
             </button>
             <button
               type="button"
               onClick={() => setActiveNav('connections')}
-              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-zinc-900 transition-colors'}
+              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
             >
               {t.navConnections}
             </button>
@@ -1064,7 +1152,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className={isDash ? 'hover:text-white transition-colors' : 'hover:text-red-700 transition-colors'}
+                className={isDash ? 'hover:text-white transition-colors' : 'hover:text-red-300 transition-colors'}
               >
                 {t.signOut}
               </button>
@@ -1072,7 +1160,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleSignIn}
-                className={isDash ? 'hover:text-white transition-colors' : 'hover:text-zinc-900 transition-colors'}
+                className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
               >
                 {t.signInGoogle}
               </button>
@@ -1093,7 +1181,10 @@ export default function App() {
         onToggleSave={handleToggleSave}
         onDeleteListing={handleDeleteListing}
         onRequireSignIn={handleSignIn}
-        onViewOrders={() => setActiveNav('connections')}
+        onViewOrders={() => {
+          setConnectionsRequestedTab(isAdmin ? 'orders' : 'listings');
+          setActiveNav('connections');
+        }}
       />
 
       <ListingFormModal
@@ -1120,12 +1211,12 @@ export default function App() {
           {activeToasts.map((toast) => (
             <div
               key={toast.id}
-              className="bg-white border border-emerald-300 rounded-xl shadow-lg p-4 text-zinc-900 space-y-2.5"
+              className="bg-[#0F352C] border border-amber-400/60 rounded-xl shadow-lg p-4 text-[#FCF9F2] space-y-2.5"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <BellRing className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <span className="text-xs font-semibold text-emerald-900 truncate">
+                  <BellRing className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span className="text-xs font-semibold text-amber-300 truncate">
                     {getNotificationEventTitle(toast.eventType, lang)}
                   </span>
                 </div>
@@ -1135,24 +1226,24 @@ export default function App() {
                   onClick={() =>
                     setActiveToasts((prev) => prev.filter((item) => item.id !== toast.id))
                   }
-                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 shrink-0"
+                  className="p-1 rounded-md text-emerald-200 hover:text-white hover:bg-[#194E41] shrink-0"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-xs text-zinc-500">
-                  <span className="font-mono font-medium text-zinc-700">{toast.orderNumber}</span> ·{' '}
+                <div className="text-xs text-emerald-200">
+                  <span className="font-mono font-medium text-white">{toast.orderNumber}</span> ·{' '}
                   {toast.actorName}
                 </div>
-                <div className="text-sm font-semibold text-zinc-900 truncate">
+                <div className="text-sm font-semibold text-[#FCF9F2] truncate">
                   {toast.listingTitle}
                 </div>
               </div>
 
               <div className="flex items-center justify-between gap-2 pt-1">
-                <span className="font-mono text-xs font-semibold text-emerald-900 tabular-nums">
+                <span className="font-mono text-xs font-bold text-amber-300 tabular-nums">
                   {formatPrice(toast.amount, toast.currency, 'total', lang)}
                 </span>
                 <button
@@ -1163,7 +1254,7 @@ export default function App() {
                     setConnectionsRequestedTab('orders');
                     setActiveNav('connections');
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium whitespace-nowrap"
+                  className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-[#0B2620] text-xs font-bold whitespace-nowrap"
                 >
                   {t.notifViewOrder}
                 </button>

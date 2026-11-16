@@ -10,6 +10,7 @@ import {
   LogOut,
   MapPin,
   Package,
+  Video,
   Volume2,
 } from 'lucide-react';
 import { CATEGORY_PRESET_IMAGES, NEIGHBORHOOD_OPTIONS } from '../data/showcaseListings';
@@ -34,11 +35,13 @@ import {
   slotsToPhotosArray,
 } from './MultiAnglePhotoUploader';
 import { ResilientImage } from './ResilientImage';
+import { ListingVideoRecorder } from './ListingVideoRecorder';
 import { VoiceDescriptionRecorder } from './VoiceDescriptionRecorder';
 
 interface SellViewProps {
   lang: Language;
   user: User | null;
+  isAdmin?: boolean;
   savedPhone?: string;
   myListings: Listing[];
   incomingOrdersCount: number;
@@ -51,6 +54,7 @@ interface SellViewProps {
 export function SellView({
   lang,
   user,
+  isAdmin = false,
   savedPhone = '',
   myListings,
   incomingOrdersCount,
@@ -67,6 +71,9 @@ export function SellView({
   const [description, setDescription] = useState('');
   const [descriptionVoiceUrl, setDescriptionVoiceUrl] = useState('');
   const [descriptionVoiceDurationSec, setDescriptionVoiceDurationSec] = useState(0);
+  const [videoDataUrl, setVideoDataUrl] = useState('');
+  const [videoMimeType, setVideoMimeType] = useState('');
+  const [videoDurationSec, setVideoDurationSec] = useState(0);
   const [price, setPrice] = useState('12500000');
   const [currency, setCurrency] = useState<CurrencyCode>('ETB');
   const [pricePeriod, setPricePeriod] = useState<PricePeriod>('total');
@@ -186,6 +193,10 @@ export function SellView({
     imageUrl: activeImage,
     photoCount: Math.max(1, uploadedPhotos.length),
     photos: uploadedPhotos,
+    videoUrl: videoDataUrl || undefined,
+    videoMimeType: videoMimeType || undefined,
+    videoDurationSec: videoDurationSec || undefined,
+    videoChunkCount: videoDataUrl ? 1 : undefined,
     status: 'available',
     specs: buildSpecs(),
     createdAtMs: Date.now(),
@@ -258,6 +269,9 @@ export function SellView({
         city,
         imageUrl: activeImage,
         photos: uploadedPhotos,
+        videoDataUrl: videoDataUrl || undefined,
+        videoMimeType: videoMimeType || undefined,
+        videoDurationSec: videoDurationSec || undefined,
         specs: buildSpecs(),
         sellerPhone: sellerPhone.trim(),
       });
@@ -265,6 +279,9 @@ export function SellView({
       setDescription('');
       setDescriptionVoiceUrl('');
       setDescriptionVoiceDurationSec(0);
+      setVideoDataUrl('');
+      setVideoMimeType('');
+      setVideoDurationSec(0);
       setPhotoSlots(createEmptyPhotoSlots());
       setPublishedSuccess(true);
     } catch (err) {
@@ -275,19 +292,19 @@ export function SellView({
   };
 
   return (
-    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-10 space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-zinc-200">
+    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+      <div className="rounded-2xl bg-gradient-to-r from-[#0D352C] via-[#13463B] to-[#163B4B] border border-[#225E4F] p-6 sm:p-7 text-[#FCF9F2] flex flex-col sm:flex-row sm:items-end justify-between gap-4 shadow-sm">
         <div className="space-y-1.5">
           <button
             type="button"
             onClick={onBackToBrowse}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{t.backToMarketplace}</span>
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{t.sellerPageTitle}</h1>
-          <p className="text-sm text-zinc-600 max-w-2xl">{t.sellerPageSubtitle}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#FCF8EE]">{t.sellerPageTitle}</h1>
+          <p className="text-sm text-[#CCE5DC] max-w-2xl">{t.sellerPageSubtitle}</p>
         </div>
 
         {user && (
@@ -295,15 +312,16 @@ export function SellView({
             <button
               type="button"
               onClick={onGoToOrders}
-              className="px-4 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-800 whitespace-nowrap"
+              className="px-4 py-2 rounded-lg border border-amber-300/50 bg-[#185244] hover:bg-[#1E6352] text-xs font-semibold text-amber-200 whitespace-nowrap"
             >
-              {t.tabMyListings} ({myListings.length}) · {t.tabOrders} ({incomingOrdersCount})
+              {t.tabMyListings} ({myListings.length}) ·{' '}
+              {isAdmin ? `${t.tabOrders} (${incomingOrdersCount})` : t.tabInbox}
             </button>
             {onSignOut && (
               <button
                 type="button"
                 onClick={onSignOut}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-medium text-zinc-700 transition-colors whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#2D6E5E] bg-[#144338] hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-emerald-100 transition-colors whitespace-nowrap shrink-0"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>{t.signOut}</span>
@@ -314,20 +332,32 @@ export function SellView({
       </div>
 
       {/* Step 1: Standalone Top Selector for For Sale vs For Rent */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6 space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-900">{t.chooseSaleOrRentLabel}</h2>
+      <div className="bg-[#FAF7F0] border border-[#D8D0C1] rounded-xl p-5 sm:p-6 space-y-3 shadow-sm">
+        <h2 className="text-sm font-bold text-[#0F4C3A]">{t.chooseSaleOrRentLabel}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             type="button"
             onClick={() => handleTransactionChange('sale')}
             className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
               transactionType === 'sale'
-                ? 'border-emerald-800 bg-emerald-50/70 ring-1 ring-emerald-800'
-                : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                ? 'border-[#9A3412] bg-[#FEF2E4] ring-2 ring-[#C2410C]/40'
+                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
             }`}
           >
-            <div className="text-base font-bold text-zinc-900">{t.txSale}</div>
-            <p className="text-xs text-zinc-600 mt-1">{t.sellOptionDesc}</p>
+            <div
+              className={`text-base font-bold ${
+                transactionType === 'sale' ? 'text-[#7C2D12]' : 'text-[#122620]'
+              }`}
+            >
+              {t.txSale}
+            </div>
+            <p
+              className={`text-xs mt-1 ${
+                transactionType === 'sale' ? 'text-[#9A3412]' : 'text-[#4C5C57]'
+              }`}
+            >
+              {t.sellOptionDesc}
+            </p>
           </button>
 
           <button
@@ -335,26 +365,38 @@ export function SellView({
             onClick={() => handleTransactionChange('rent')}
             className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
               transactionType === 'rent'
-                ? 'border-emerald-800 bg-emerald-50/70 ring-1 ring-emerald-800'
-                : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                ? 'border-[#1E40AF] bg-[#E8F1FC] ring-2 ring-[#2563EB]/40'
+                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
             }`}
           >
-            <div className="text-base font-bold text-zinc-900">{t.txRent}</div>
-            <p className="text-xs text-zinc-600 mt-1">{t.rentOptionDesc}</p>
+            <div
+              className={`text-base font-bold ${
+                transactionType === 'rent' ? 'text-[#1E3A8A]' : 'text-[#122620]'
+              }`}
+            >
+              {t.txRent}
+            </div>
+            <p
+              className={`text-xs mt-1 ${
+                transactionType === 'rent' ? 'text-[#1D4ED8]' : 'text-[#4C5C57]'
+              }`}
+            >
+              {t.rentOptionDesc}
+            </p>
           </button>
         </div>
       </div>
 
       {/* Step 2: Directly Underneath — Enter What You Are Selling or Renting Out */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-7 bg-white border border-zinc-200 rounded-xl p-6 sm:p-8">
+        <div className="lg:col-span-7 bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-6 sm:p-8 shadow-sm">
           {!user ? (
             <div className="py-10 text-center space-y-4">
-              <p className="text-sm text-zinc-600 max-w-md mx-auto">{t.publishStarterPrompt}</p>
+              <p className="text-sm text-[#394D46] max-w-md mx-auto">{t.publishStarterPrompt}</p>
               <button
                 type="button"
                 onClick={onSignIn}
-                className="px-6 py-2.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-medium transition-colors"
+                className="px-6 py-2.5 rounded-lg bg-[#0F4C3A] hover:bg-[#0B3B2D] text-white text-sm font-semibold transition-colors"
               >
                 {t.signInGoogle}
               </button>
@@ -362,15 +404,15 @@ export function SellView({
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               {publishedSuccess && (
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="p-4 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-                    <span>{t.sellerPostSuccess}</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0 mt-0.5" />
+                    <span className="font-medium">{t.sellerPostSuccess}</span>
                   </div>
                   <button
                     type="button"
                     onClick={onBackToBrowse}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-800 text-white text-xs font-medium whitespace-nowrap shrink-0"
+                    className="px-3.5 py-1.5 rounded-lg bg-[#0F4C3A] text-white text-xs font-semibold whitespace-nowrap shrink-0"
                   >
                     {t.navExplore}
                   </button>
@@ -378,12 +420,28 @@ export function SellView({
               )}
 
               <div className="space-y-3">
-                <h2 className="text-sm font-semibold text-zinc-900">
+                <h2 className="text-sm font-bold text-[#0F4C3A]">
                   {transactionType === 'sale' ? t.whatSellingLabel : t.whatRentingLabel}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                   {categoryTiles.map(({ key, label, Icon }) => {
                     const active = category === key;
+                    const activeColors =
+                      key === 'land'
+                        ? 'border-[#B45309] bg-[#FDF1DB] text-[#5C2D0C]'
+                        : key === 'vehicle'
+                        ? 'border-[#1D4ED8] bg-[#E5F0FC] text-[#142F66]'
+                        : key === 'goods'
+                        ? 'border-[#9D174D] bg-[#F8EAF2] text-[#591432]'
+                        : 'border-[#0F5E48] bg-[#E3F5EE] text-[#0B3B2E]';
+                    const iconColor =
+                      key === 'land'
+                        ? 'text-[#B45309]'
+                        : key === 'vehicle'
+                        ? 'text-[#1D4ED8]'
+                        : key === 'goods'
+                        ? 'text-[#9D174D]'
+                        : 'text-[#0F5E48]';
                     return (
                       <button
                         key={key}
@@ -391,14 +449,12 @@ export function SellView({
                         onClick={() => handleCategoryChange(key)}
                         className={`p-3 rounded-lg border text-left transition-colors flex flex-col gap-1.5 ${
                           active
-                            ? 'border-emerald-800 bg-emerald-50/70 text-emerald-950'
-                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                            ? `${activeColors} font-semibold shadow-sm`
+                            : 'border-[#D8D0C1] bg-[#F7F3EA] text-[#2F423B] hover:bg-[#EFE9DC]'
                         }`}
                       >
-                        <Icon
-                          className={`w-4 h-4 ${active ? 'text-emerald-800' : 'text-zinc-500'}`}
-                        />
-                        <span className="text-xs font-medium truncate">{label}</span>
+                        <Icon className={`w-4 h-4 ${active ? iconColor : 'text-[#5A6B65]'}`} />
+                        <span className="text-xs font-semibold truncate">{label}</span>
                       </button>
                     );
                   })}
@@ -538,13 +594,13 @@ export function SellView({
 
               {(category === 'apartment' || category === 'house') && (
                 <div className="space-y-4 pt-1">
-                  <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-4">
-                    <div className="text-xs font-semibold text-zinc-900">
+                  <div className="p-4 rounded-xl bg-[#E8F3EE] border border-[#B7DACA] space-y-4">
+                    <div className="text-xs font-bold text-[#0B3B2E]">
                       {t.rentalOptionsHeading}
                     </div>
 
                     <div className="space-y-2">
-                      <label className="block text-xs font-medium text-zinc-700">
+                      <label className="block text-xs font-semibold text-[#184E3E]">
                         {t.roomClassLabel}
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -559,10 +615,10 @@ export function SellView({
                             key={opt.key}
                             type="button"
                             onClick={() => handleRoomClassSelect(opt.key)}
-                            className={`px-3 py-2.5 rounded-lg border text-xs font-medium text-left transition-colors ${
+                            className={`px-3 py-2.5 rounded-lg border text-xs font-semibold text-left transition-colors ${
                               roomClass === opt.key
-                                ? 'border-emerald-800 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-800'
-                                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100'
+                                ? 'border-[#0F4C3A] bg-[#0F4C3A] text-white shadow-sm'
+                                : 'border-[#B9D4C8] bg-[#FFFDF8] text-[#173D32] hover:bg-[#F1F8F4]'
                             }`}
                           >
                             {opt.label}
@@ -573,7 +629,7 @@ export function SellView({
 
                     {transactionType === 'rent' && (
                       <div className="space-y-2">
-                        <label className="block text-xs font-medium text-zinc-700">
+                        <label className="block text-xs font-semibold text-[#184E3E]">
                           {t.tenantPrefLabel}
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -588,10 +644,10 @@ export function SellView({
                               key={opt.key}
                               type="button"
                               onClick={() => setTenantPreference(opt.key)}
-                              className={`px-3 py-2.5 rounded-lg border text-xs font-medium text-left transition-colors ${
+                              className={`px-3 py-2.5 rounded-lg border text-xs font-semibold text-left transition-colors ${
                                 tenantPreference === opt.key
-                                  ? 'border-emerald-800 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-800'
-                                  : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100'
+                                  ? 'border-[#1E40AF] bg-[#1E40AF] text-white shadow-sm'
+                                  : 'border-[#B9D4C8] bg-[#FFFDF8] text-[#173D32] hover:bg-[#F1F8F4]'
                               }`}
                             >
                               {opt.label}
@@ -790,12 +846,22 @@ export function SellView({
                 />
               </div>
 
-              <div className="pt-2 border-t border-zinc-200">
+              <div className="pt-2 border-t border-zinc-200 space-y-5">
                 <MultiAnglePhotoUploader
                   lang={lang}
                   category={category}
                   slots={photoSlots}
                   onChangeSlots={setPhotoSlots}
+                />
+                <ListingVideoRecorder
+                  lang={lang}
+                  videoUrl={videoDataUrl}
+                  durationSec={videoDurationSec}
+                  onChange={(url, mime, secs) => {
+                    setVideoDataUrl(url);
+                    setVideoMimeType(mime);
+                    setVideoDurationSec(secs);
+                  }}
                 />
               </div>
 
@@ -805,18 +871,18 @@ export function SellView({
                 </div>
               )}
 
-              <div className="pt-3 border-t border-zinc-200 flex items-center justify-end gap-3">
+              <div className="pt-3 border-t border-[#E6DED0] flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={onBackToBrowse}
-                  className="px-4 py-2.5 rounded-lg border border-zinc-300 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                  className="px-4 py-2.5 rounded-lg border border-[#CEC5B3] bg-[#F7F3EA] text-sm font-medium text-[#2F423B] hover:bg-[#EDE6D8]"
                 >
                   {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-6 py-2.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+                  className="px-6 py-2.5 rounded-lg bg-[#0F4C3A] hover:bg-[#0B3B2D] disabled:opacity-60 text-white text-sm font-semibold transition-colors"
                 >
                   {t.submitListing}
                 </button>
@@ -827,9 +893,11 @@ export function SellView({
 
         {/* Live Buyer Card Preview */}
         <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-4">
-          <div className="text-xs font-medium text-zinc-500">{t.livePreviewLabel}</div>
-          <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden">
-            <div className="relative aspect-[4/3] w-full bg-zinc-100">
+          <div className="text-xs font-bold uppercase tracking-wider text-[#9A3412]">
+            {t.livePreviewLabel}
+          </div>
+          <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl overflow-hidden shadow-sm">
+            <div className="relative aspect-[4/3] w-full bg-[#E6DFD1]">
               <ResilientImage
                 src={previewListing.imageUrl}
                 alt={previewListing.title}
@@ -837,9 +905,9 @@ export function SellView({
                 className="w-full h-full object-cover"
               />
               {uploadedPhotos.length > 0 && (
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-4 py-2.5 flex items-center justify-between text-xs text-white">
-                  <span className="truncate">{uploadedPhotos[0].angleLabel}</span>
-                  <span className="font-mono tabular-nums shrink-0">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-4 py-2.5 flex items-center justify-between text-xs text-white">
+                  <span className="truncate text-amber-200">{uploadedPhotos[0].angleLabel}</span>
+                  <span className="font-mono tabular-nums text-emerald-200 shrink-0">
                     {uploadedPhotos.length} / 6 {t.photosCountSuffix}
                   </span>
                 </div>
@@ -850,7 +918,7 @@ export function SellView({
                 {uploadedPhotos.map((p) => (
                   <div
                     key={p.slotIndex}
-                    className="aspect-[4/3] rounded overflow-hidden border border-zinc-200 bg-zinc-100"
+                    className="aspect-[4/3] rounded overflow-hidden border border-[#D8D0C1] bg-[#E6DFD1]"
                   >
                     <ResilientImage
                       src={p.imageDataUrl}
@@ -863,28 +931,49 @@ export function SellView({
               </div>
             )}
             <div className="p-5 space-y-2.5">
-              <div className="text-xs text-zinc-500">
+              <div className="text-xs font-medium text-[#0F5E48]">
                 {getCategoryLabel(previewListing.category, lang)} ·{' '}
-                {getTransactionLabel(previewListing.transactionType, lang)} ·{' '}
-                {previewListing.neighborhood}
+                <span className="text-[#9A3412]">
+                  {getTransactionLabel(previewListing.transactionType, lang)}
+                </span>{' '}
+                · <span className="text-[#4C5C57]">{previewListing.neighborhood}</span>
               </div>
-              <h3 className="text-base font-semibold text-zinc-900 line-clamp-1">
+              <h3 className="text-base font-bold text-[#102620] line-clamp-1">
                 {previewListing.title}
               </h3>
-              <p className="text-xs text-zinc-500 line-clamp-1 tabular-nums">
+              <p className="text-xs text-[#4C5C57] line-clamp-1 tabular-nums">
                 {formatSpecsLine(previewListing, lang)}
               </p>
               {previewListing.descriptionVoiceUrl && (
-                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-900">
-                    <Volume2 className="w-3.5 h-3.5 text-emerald-800 shrink-0" />
+                <div className="p-2.5 rounded-lg bg-[#E3F5EE] border border-[#A7D9C6] space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#0B3B2E]">
+                    <Volume2 className="w-3.5 h-3.5 text-[#0F5E48] shrink-0" />
                     <span>{t.voicePlayHeading}</span>
                   </div>
                   <audio controls src={previewListing.descriptionVoiceUrl} className="w-full h-8" />
                 </div>
               )}
-              <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
-                <span className="font-mono text-[15px] font-semibold text-emerald-900 tabular-nums">
+              {previewListing.videoUrl && (
+                <div className="p-2.5 rounded-lg bg-[#E5F0FC] border border-[#AECCEF] space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#142F66]">
+                    <Video className="w-3.5 h-3.5 text-[#1D4ED8] shrink-0" />
+                    <span>{t.videoPlayHeading}</span>
+                  </div>
+                  <video
+                    controls
+                    playsInline
+                    preload="metadata"
+                    src={previewListing.videoUrl}
+                    className="w-full max-h-48 rounded-md bg-black"
+                  />
+                </div>
+              )}
+              <div className="pt-3 border-t border-[#EAE2D3] flex items-center justify-between gap-2">
+                <span
+                  className={`font-mono text-[15px] font-bold tabular-nums ${
+                    previewListing.transactionType === 'rent' ? 'text-[#1E40AF]' : 'text-[#9A3412]'
+                  }`}
+                >
                   {formatPrice(
                     previewListing.price,
                     previewListing.currency,
@@ -892,7 +981,11 @@ export function SellView({
                     lang
                   )}
                 </span>
-                <span className="px-3 py-1.5 rounded-lg bg-emerald-800 text-white text-xs font-medium">
+                <span
+                  className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold ${
+                    previewListing.transactionType === 'rent' ? 'bg-[#1E40AF]' : 'bg-[#0F4C3A]'
+                  }`}
+                >
                   {previewListing.transactionType === 'rent' ? t.reserveNow : t.orderNow}
                 </span>
               </div>

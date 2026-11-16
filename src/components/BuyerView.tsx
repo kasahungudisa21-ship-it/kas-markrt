@@ -46,6 +46,8 @@ interface BuyerViewProps {
   lang: Language;
   user: User | null;
   isAdmin?: boolean;
+  requestedTransactionType?: TransactionType;
+  onTransactionTypeChange?: (tx: TransactionType) => void;
   savedPhone?: string;
   allListings: Listing[];
   savedIds: Set<string>;
@@ -63,6 +65,8 @@ export function BuyerView({
   lang,
   user,
   isAdmin = false,
+  requestedTransactionType,
+  onTransactionTypeChange,
   savedPhone = '',
   allListings,
   savedIds,
@@ -77,7 +81,9 @@ export function BuyerView({
 }: BuyerViewProps) {
   const t = translations[lang];
 
-  const [transactionType, setTransactionType] = useState<TransactionType>('sale');
+  const [transactionType, setTransactionType] = useState<TransactionType>(
+    requestedTransactionType || 'sale'
+  );
   const [category, setCategory] = useState<'all' | ListingCategory>('all');
   const [roomClassFilter, setRoomClassFilter] = useState<'all' | RoomClass>('all');
   const [tenantPrefFilter, setTenantPrefFilter] = useState<'all' | 'late' | 'bale_tedar'>('all');
@@ -106,6 +112,25 @@ export function BuyerView({
       setWantedPhone(savedPhone);
     }
   }, [savedPhone, wantedPhone]);
+
+  useEffect(() => {
+    if (requestedTransactionType) {
+      setTransactionType(requestedTransactionType);
+      if (requestedTransactionType === 'sale') {
+        setRoomClassFilter('all');
+        setTenantPrefFilter('all');
+      }
+    }
+  }, [requestedTransactionType]);
+
+  const handleSelectTx = (nextTx: TransactionType) => {
+    setTransactionType(nextTx);
+    onTransactionTypeChange?.(nextTx);
+    if (nextTx === 'sale') {
+      setRoomClassFilter('all');
+      setTenantPrefFilter('all');
+    }
+  };
 
   const categoryTiles: { key: ListingCategory; label: string; Icon: typeof Building2 }[] = [
     { key: 'apartment', label: t.catApartment, Icon: Building2 },
@@ -244,34 +269,35 @@ export function BuyerView({
   };
 
   return (
-    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-10 space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-zinc-200">
+    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+      <div className="rounded-2xl bg-gradient-to-r from-[#103048] via-[#134254] to-[#0F4944] border border-[#235F73] p-6 sm:p-7 text-[#F5FAFC] flex flex-col sm:flex-row sm:items-end justify-between gap-4 shadow-sm">
         <div className="space-y-1.5">
           <button
             type="button"
             onClick={onBackToBrowse}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{t.backToMarketplace}</span>
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{t.buyerStudioTitle}</h1>
-          <p className="text-sm text-zinc-600 max-w-2xl">{t.buyerStudioSubtitle}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#FBF9F2]">{t.buyerStudioTitle}</h1>
+          <p className="text-sm text-[#CBE3EC] max-w-2xl">{t.buyerStudioSubtitle}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button
             type="button"
             onClick={onGoToOrders}
-            className="px-4 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 text-xs font-medium text-zinc-800 whitespace-nowrap"
+            className="px-4 py-2 rounded-lg border border-sky-300/50 bg-[#194E6B] hover:bg-[#206082] text-xs font-semibold text-sky-100 whitespace-nowrap"
           >
-            {t.tabOrders} ({myOrders.length}) · {t.tabSaved} ({savedIds.size})
+            {isAdmin ? `${t.tabOrders} (${myOrders.length}) · ` : ''}
+            {t.tabSaved} ({savedIds.size})
           </button>
           {user && onSignOut && (
             <button
               type="button"
               onClick={onSignOut}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-zinc-300 bg-white hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-xs font-medium text-zinc-700 transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#2B6682] bg-[#144058] hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-sky-100 transition-colors whitespace-nowrap shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>{t.signOut}</span>
@@ -281,44 +307,64 @@ export function BuyerView({
       </div>
 
       {/* Step 1: Standalone Top Selector for Looking to Buy vs Looking to Rent */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6 space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-900">{t.chooseBuyOrRentLabel}</h2>
+      <div className="bg-[#FAF7F0] border border-[#D8D0C1] rounded-xl p-5 sm:p-6 space-y-3 shadow-sm">
+        <h2 className="text-sm font-bold text-[#143B5C]">{t.chooseBuyOrRentLabel}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             type="button"
-            onClick={() => {
-              setTransactionType('sale');
-              setRoomClassFilter('all');
-              setTenantPrefFilter('all');
-            }}
+            onClick={() => handleSelectTx('sale')}
             className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
               transactionType === 'sale'
-                ? 'border-emerald-800 bg-emerald-50/70 ring-1 ring-emerald-800'
-                : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                ? 'border-[#9A3412] bg-[#FEF2E4] ring-2 ring-[#C2410C]/40'
+                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
             }`}
           >
-            <div className="text-base font-bold text-zinc-900">{t.buyOptionTitle}</div>
-            <p className="text-xs text-zinc-600 mt-1">{t.buyOptionDesc}</p>
+            <div
+              className={`text-base font-bold ${
+                transactionType === 'sale' ? 'text-[#7C2D12]' : 'text-[#122620]'
+              }`}
+            >
+              {t.buyOptionTitle}
+            </div>
+            <p
+              className={`text-xs mt-1 ${
+                transactionType === 'sale' ? 'text-[#9A3412]' : 'text-[#4C5C57]'
+              }`}
+            >
+              {t.buyOptionDesc}
+            </p>
           </button>
 
           <button
             type="button"
-            onClick={() => setTransactionType('rent')}
+            onClick={() => handleSelectTx('rent')}
             className={`p-4 sm:p-5 rounded-xl border text-left transition-all ${
               transactionType === 'rent'
-                ? 'border-emerald-800 bg-emerald-50/70 ring-1 ring-emerald-800'
-                : 'border-zinc-200 bg-white hover:bg-zinc-50'
+                ? 'border-[#1E40AF] bg-[#E8F1FC] ring-2 ring-[#2563EB]/40'
+                : 'border-[#D8D0C1] bg-[#FFFDF8] hover:bg-[#F5EFE3]'
             }`}
           >
-            <div className="text-base font-bold text-zinc-900">{t.rentBuyerOptionTitle}</div>
-            <p className="text-xs text-zinc-600 mt-1">{t.rentBuyerOptionDesc}</p>
+            <div
+              className={`text-base font-bold ${
+                transactionType === 'rent' ? 'text-[#1E3A8A]' : 'text-[#122620]'
+              }`}
+            >
+              {t.rentBuyerOptionTitle}
+            </div>
+            <p
+              className={`text-xs mt-1 ${
+                transactionType === 'rent' ? 'text-[#1D4ED8]' : 'text-[#4C5C57]'
+              }`}
+            >
+              {t.rentBuyerOptionDesc}
+            </p>
           </button>
         </div>
       </div>
 
       {/* Step 2: Directly Underneath — Enter What You Want to Buy or Rent */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-zinc-900">
+      <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 sm:p-6 space-y-4 shadow-sm">
+        <h2 className="text-sm font-bold text-[#0F4C3A]">
           {transactionType === 'sale' ? t.whatBuyingLabel : t.whatRentingBuyerLabel}
         </h2>
 
@@ -328,14 +374,30 @@ export function BuyerView({
             onClick={() => setCategory('all')}
             className={`p-3 rounded-lg border text-left transition-colors flex flex-col justify-center ${
               category === 'all'
-                ? 'border-emerald-800 bg-emerald-50/70 text-emerald-950 font-semibold'
-                : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                ? 'border-[#0F4C3A] bg-[#0F4C3A] text-white font-semibold'
+                : 'border-[#D8D0C1] bg-[#F7F3EA] text-[#2F423B] hover:bg-[#EFE9DC]'
             }`}
           >
-            <span className="text-xs font-medium">{t.allCategories}</span>
+            <span className="text-xs font-semibold">{t.allCategories}</span>
           </button>
           {categoryTiles.map(({ key, label, Icon }) => {
             const active = category === key;
+            const activeColors =
+              key === 'land'
+                ? 'border-[#B45309] bg-[#FDF1DB] text-[#5C2D0C]'
+                : key === 'vehicle'
+                ? 'border-[#1D4ED8] bg-[#E5F0FC] text-[#142F66]'
+                : key === 'goods'
+                ? 'border-[#9D174D] bg-[#F8EAF2] text-[#591432]'
+                : 'border-[#0F5E48] bg-[#E3F5EE] text-[#0B3B2E]';
+            const iconColor =
+              key === 'land'
+                ? 'text-[#B45309]'
+                : key === 'vehicle'
+                ? 'text-[#1D4ED8]'
+                : key === 'goods'
+                ? 'text-[#9D174D]'
+                : 'text-[#0F5E48]';
             return (
               <button
                 key={key}
@@ -350,12 +412,12 @@ export function BuyerView({
                 }}
                 className={`p-3 rounded-lg border text-left transition-colors flex flex-col gap-1.5 ${
                   active
-                    ? 'border-emerald-800 bg-emerald-50/70 text-emerald-950'
-                    : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                    ? `${activeColors} shadow-sm`
+                    : 'border-[#D8D0C1] bg-[#F7F3EA] text-[#2F423B] hover:bg-[#EFE9DC]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${active ? 'text-emerald-800' : 'text-zinc-500'}`} />
-                <span className="text-xs font-medium truncate">{label}</span>
+                <Icon className={`w-4 h-4 ${active ? iconColor : 'text-[#5A6B65]'}`} />
+                <span className="text-xs font-semibold truncate">{label}</span>
               </button>
             );
           })}
@@ -363,17 +425,17 @@ export function BuyerView({
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
           <div className="sm:col-span-6 relative">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#0F5E48] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="search"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder={t.searchPlaceholder}
-              className="w-full h-10 pl-10 pr-3 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-800"
+              className="w-full h-10 pl-10 pr-3 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-sm text-[#102620] focus:outline-none focus:ring-2 focus:ring-emerald-800"
             />
           </div>
           <div className="sm:col-span-3 relative">
-            <MapPin className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <MapPin className="w-4 h-4 text-[#B45309] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               list="buyer-filter-locations"
@@ -381,14 +443,14 @@ export function BuyerView({
               value={neighborhood}
               onChange={(e) => setNeighborhood(e.target.value)}
               placeholder={t.locationFilterPlaceholder}
-              className="w-full h-10 pl-9 pr-8 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-800"
+              className="w-full h-10 pl-9 pr-8 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-sm text-[#102620] placeholder:text-[#6B665A] focus:outline-none focus:ring-2 focus:ring-emerald-800"
             />
             {neighborhood && (
               <button
                 type="button"
                 aria-label="Clear location"
                 onClick={() => setNeighborhood('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6B665A] hover:text-[#102620]"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -406,18 +468,18 @@ export function BuyerView({
               placeholder={`${t.maxBudgetLabel} (ETB/USD)`}
               value={maxBudget}
               onChange={(e) => setMaxBudget(e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-zinc-300 bg-white text-sm font-mono tabular-nums text-zinc-900"
+              className="w-full h-10 px-3 rounded-lg border border-[#CEC5B3] bg-[#FFFDF8] text-sm font-mono tabular-nums text-[#102620]"
             />
           </div>
         </div>
 
         {transactionType === 'rent' &&
           (category === 'all' || category === 'apartment' || category === 'house') && (
-            <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-3">
-              <div className="text-xs font-semibold text-zinc-900">{t.rentalOptionsHeading}</div>
+            <div className="p-4 rounded-xl bg-[#E8F1FC] border border-[#B2CDF0] space-y-3">
+              <div className="text-xs font-bold text-[#142F66]">{t.rentalOptionsHeading}</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-zinc-600">{t.roomClassLabel}</div>
+                  <div className="text-xs font-semibold text-[#1E40AF]">{t.roomClassLabel}</div>
                   <div className="flex flex-wrap gap-2">
                     {(
                       [
@@ -431,10 +493,10 @@ export function BuyerView({
                         key={opt.key}
                         type="button"
                         onClick={() => setRoomClassFilter(opt.key)}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
                           roomClassFilter === opt.key
-                            ? 'border-emerald-800 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-800'
-                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100'
+                            ? 'border-[#1E40AF] bg-[#1E40AF] text-white'
+                            : 'border-[#B6CEE8] bg-[#FFFDF8] text-[#1E3A8A] hover:bg-[#DDEAF9]'
                         }`}
                       >
                         {opt.label}
@@ -444,7 +506,7 @@ export function BuyerView({
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-zinc-600">{t.tenantPrefLabel}</div>
+                  <div className="text-xs font-semibold text-[#1E40AF]">{t.tenantPrefLabel}</div>
                   <div className="flex flex-wrap gap-2">
                     {(
                       [
@@ -457,10 +519,10 @@ export function BuyerView({
                         key={opt.key}
                         type="button"
                         onClick={() => setTenantPrefFilter(opt.key)}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
                           tenantPrefFilter === opt.key
-                            ? 'border-emerald-800 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-800'
-                            : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100'
+                            ? 'border-[#0F4C3A] bg-[#0F4C3A] text-white'
+                            : 'border-[#B6CEE8] bg-[#FFFDF8] text-[#1E3A8A] hover:bg-[#DDEAF9]'
                         }`}
                       >
                         {opt.label}
@@ -478,10 +540,10 @@ export function BuyerView({
         <div className="lg:col-span-8 space-y-6">
           {/* Side-by-Side Comparison Strip when 2+ items selected */}
           {comparedListings.length >= 2 && (
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 space-y-4 overflow-x-auto">
+            <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 space-y-4 overflow-x-auto shadow-sm">
               <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
-                  <Scale className="w-4 h-4 text-emerald-800" />
+                <div className="flex items-center gap-2 text-sm font-bold text-[#142F66]">
+                  <Scale className="w-4 h-4 text-[#1D4ED8]" />
                   <span>
                     {t.comparingTitle} ({comparedListings.length}/3)
                   </span>
@@ -489,7 +551,7 @@ export function BuyerView({
                 <button
                   type="button"
                   onClick={() => setCompareIds([])}
-                  className="text-xs font-medium text-zinc-500 hover:text-zinc-900"
+                  className="text-xs font-semibold text-[#9A3412] hover:underline"
                 >
                   {t.clearCompare}
                 </button>
@@ -497,51 +559,51 @@ export function BuyerView({
 
               <table className="w-full text-left text-xs border-collapse min-w-[520px]">
                 <thead>
-                  <tr className="border-b border-zinc-200 text-zinc-500">
-                    <th className="py-2 pr-4 font-medium w-28">{t.fieldTitle}</th>
+                  <tr className="border-b border-[#E6DED0] text-[#56625E]">
+                    <th className="py-2 pr-4 font-semibold w-28">{t.fieldTitle}</th>
                     {comparedListings.map((item) => (
-                      <th key={item.id} className="py-2 px-3 font-semibold text-zinc-900">
+                      <th key={item.id} className="py-2 px-3 font-bold text-[#102620]">
                         {item.title}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-[#EFE8DA]">
                   <tr>
-                    <td className="py-2.5 pr-4 text-zinc-500">{t.fieldPrice}</td>
+                    <td className="py-2.5 pr-4 text-[#56625E] font-medium">{t.fieldPrice}</td>
                     {comparedListings.map((item) => (
                       <td
                         key={item.id}
-                        className="py-2.5 px-3 font-mono font-semibold text-emerald-900 tabular-nums"
+                        className="py-2.5 px-3 font-mono font-bold text-[#9A3412] tabular-nums"
                       >
                         {formatPrice(item.price, item.currency, item.pricePeriod, lang)}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-4 text-zinc-500">{t.locationLabel}</td>
+                    <td className="py-2.5 pr-4 text-[#56625E] font-medium">{t.locationLabel}</td>
                     {comparedListings.map((item) => (
-                      <td key={item.id} className="py-2.5 px-3 text-zinc-700">
+                      <td key={item.id} className="py-2.5 px-3 text-[#2B4039]">
                         {item.neighborhood}, {item.city}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-4 text-zinc-500">{t.specsHeading}</td>
+                    <td className="py-2.5 pr-4 text-[#56625E] font-medium">{t.specsHeading}</td>
                     {comparedListings.map((item) => (
-                      <td key={item.id} className="py-2.5 px-3 text-zinc-700 tabular-nums">
+                      <td key={item.id} className="py-2.5 px-3 text-[#2B4039] tabular-nums">
                         {formatSpecsLine(item, lang)}
                       </td>
                     ))}
                   </tr>
                   <tr>
-                    <td className="py-2.5 pr-4 text-zinc-500">{t.sellerLabel}</td>
+                    <td className="py-2.5 pr-4 text-[#56625E] font-medium">{t.sellerLabel}</td>
                     {comparedListings.map((item) => (
                       <td key={item.id} className="py-2.5 px-3">
                         <button
                           type="button"
                           onClick={() => onSelectListing(item, 'order')}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium"
+                          className="px-3 py-1.5 rounded-lg bg-[#0F4C3A] hover:bg-[#0B3B2D] text-white text-xs font-semibold"
                         >
                           {item.transactionType === 'rent' ? t.reserveNow : t.orderNow}
                         </button>
@@ -553,19 +615,19 @@ export function BuyerView({
             </div>
           )}
 
-          <div className="flex items-center justify-between text-xs text-zinc-500">
-            <span className="font-semibold text-sm text-zinc-900">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-sm text-[#0F4C3A]">
               {t.matchingListingsTitle} ({matchingListings.length})
             </span>
-            <span>
+            <span className="font-semibold text-[#9A3412]">
               {getTransactionLabel(transactionType, lang)}
               {category !== 'all' ? ` · ${getCategoryLabel(category, lang)}` : ''}
             </span>
           </div>
 
           {matchingListings.length === 0 ? (
-            <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center space-y-3">
-              <p className="text-sm text-zinc-600">{t.noListingsFound}</p>
+            <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center space-y-3">
+              <p className="text-sm text-[#42544F]">{t.noListingsFound}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -576,7 +638,7 @@ export function BuyerView({
                   setMaxBudget('');
                   setKeyword('');
                 }}
-                className="px-4 py-2 rounded-lg bg-zinc-900 text-white text-xs font-medium"
+                className="px-4 py-2 rounded-lg bg-[#9A3412] hover:bg-[#7C2D12] text-white text-xs font-semibold"
               >
                 {t.resetFilters}
               </button>
@@ -598,10 +660,10 @@ export function BuyerView({
                       <button
                         type="button"
                         onClick={() => toggleCompare(item.id)}
-                        className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition-colors ${
+                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md transition-colors ${
                           isCompared
-                            ? 'bg-emerald-800 text-white'
-                            : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/70'
+                            ? 'bg-[#1E40AF] text-white'
+                            : 'text-[#1E3A8A] bg-[#E5F0FC] hover:bg-[#D5E6FA]'
                         }`}
                       >
                         <Scale className="w-3.5 h-3.5" />
@@ -617,26 +679,26 @@ export function BuyerView({
 
         {/* Right Sticky Column: Post a Buyer Request + Live Buyer Requests Feed */}
         <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-6">
-          <div className="bg-white border border-zinc-200 rounded-xl p-5 sm:p-6 space-y-4">
+          <div className="bg-[#FDF8EE] border border-[#DFC99D] rounded-xl p-5 sm:p-6 space-y-4 shadow-sm">
             <div className="space-y-1">
-              <h2 className="text-base font-bold text-zinc-900">{t.postWantedTitle}</h2>
-              <p className="text-xs text-zinc-600 leading-relaxed">{t.postWantedSubtitle}</p>
+              <h2 className="text-base font-bold text-[#7C2D12]">{t.postWantedTitle}</h2>
+              <p className="text-xs text-[#6B462B] leading-relaxed">{t.postWantedSubtitle}</p>
             </div>
 
             {!user ? (
               <button
                 type="button"
                 onClick={onSignIn}
-                className="w-full py-2.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium"
+                className="w-full py-2.5 rounded-lg bg-[#0F4C3A] hover:bg-[#0B3B2D] text-white text-xs font-semibold"
               >
                 {t.signInGoogle}
               </button>
             ) : (
               <form onSubmit={handleWantedSubmit} className="space-y-3">
                 {postedSuccess && (
-                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                    <span>{t.wantedSuccess}</span>
+                  <div className="p-3 rounded-lg bg-emerald-100 border border-emerald-300 text-emerald-950 text-xs flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-800 shrink-0" />
+                    <span className="font-medium">{t.wantedSuccess}</span>
                   </div>
                 )}
 
@@ -814,31 +876,37 @@ export function BuyerView({
           </div>
 
           {buyerRequests.length > 0 && (
-            <div className="bg-white border border-zinc-200 rounded-xl p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-zinc-900">
+            <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 space-y-4 shadow-sm">
+              <h3 className="text-sm font-bold text-[#0F4C3A]">
                 {t.activeWantedTitle} ({buyerRequests.length})
               </h3>
-              <div className="divide-y divide-zinc-100">
+              <div className="divide-y divide-[#EAE2D3]">
                 {buyerRequests.map((req) => {
                   const isOwn = Boolean(user && req.buyerId === user.uid);
                   return (
                     <div key={req.id} className="py-3 first:pt-0 last:pb-0 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2 text-xs text-zinc-500">
+                      <div className="flex items-center justify-between gap-2 text-xs text-[#56625E]">
                         <span>
-                          {getTransactionLabel(req.transactionType, lang)} ·{' '}
-                          {getCategoryLabel(req.category, lang)} · {req.preferredNeighborhood}
+                          <span className="font-semibold text-[#1D4ED8]">
+                            {getTransactionLabel(req.transactionType, lang)}
+                          </span>{' '}
+                          ·{' '}
+                          <span className="font-semibold text-[#0F5E48]">
+                            {getCategoryLabel(req.category, lang)}
+                          </span>{' '}
+                          · {req.preferredNeighborhood}
                           {req.roomClass ? ` · ${getRoomClassLabel(req.roomClass, lang)}` : ''}
                           {req.tenantPreference
                             ? ` · ${getTenantPreferenceLabel(req.tenantPreference, lang)}`
                             : ''}
                         </span>
-                        <span className="capitalize font-medium text-zinc-700">{req.status}</span>
+                        <span className="capitalize font-semibold text-[#B45309]">{req.status}</span>
                       </div>
-                      <div className="text-sm font-semibold text-zinc-900">{req.title}</div>
-                      <div className="font-mono text-xs font-semibold text-emerald-900 tabular-nums">
+                      <div className="text-sm font-bold text-[#102620]">{req.title}</div>
+                      <div className="font-mono text-xs font-bold text-[#9A3412] tabular-nums">
                         ≤ {formatPrice(req.maxBudget, req.currency, 'total', lang)}
                       </div>
-                      {req.notes && <p className="text-xs text-zinc-600">{req.notes}</p>}
+                      {req.notes && <p className="text-xs text-[#4C5C57]">{req.notes}</p>}
                       {(isOwn || isAdmin) && (
                         <div className="pt-1 flex items-center gap-2">
                           {req.status === 'active' && (
@@ -853,7 +921,7 @@ export function BuyerView({
                                   setBusyId(null);
                                 }
                               }}
-                              className="text-xs font-medium text-emerald-800 hover:underline"
+                              className="text-xs font-semibold text-[#0F5E48] hover:underline"
                             >
                               {t.markFulfilled}
                             </button>
@@ -869,7 +937,7 @@ export function BuyerView({
                                 setBusyId(null);
                               }
                             }}
-                            className="inline-flex items-center gap-1 text-xs text-red-700 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 hover:underline"
                           >
                             <Trash2 className="w-3 h-3" />
                             <span>{t.deleteListing}</span>

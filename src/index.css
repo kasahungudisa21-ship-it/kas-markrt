@@ -9,8 +9,8 @@
 @layer base {
   body {
     font-family: var(--font-sans);
-    background-color: #fafafa;
-    color: #18181b;
+    background-color: #ede8df;
+    color: #122620;
   }
 
   h1, h2, h3, h4 {

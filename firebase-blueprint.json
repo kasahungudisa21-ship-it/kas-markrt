@@ -157,6 +157,19 @@
           "type": "integer",
           "description": "Total number of uploaded angle photos (1 to 6)"
         },
+        "videoDurationSec": {
+          "type": "integer",
+          "description": "Duration of optional listing walkthrough video in seconds (0 to 120)"
+        },
+        "videoChunkCount": {
+          "type": "integer",
+          "description": "Total number of videoChunks documents (0 to 16)"
+        },
+        "videoMimeType": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "MIME type of the listing walkthrough video"
+        },
         "status": {
           "type": "string",
           "enum": ["available", "reserved", "closed"],
@@ -706,6 +719,55 @@
         "updatedAt"
       ]
     },
+    "ListingVideoChunk": {
+      "title": "ListingVideoChunk",
+      "description": "Base64 chunk of an optional seller/lessor walkthrough video stored under a listing.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent listing ID"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent listing owner Firebase Auth UID"
+        },
+        "chunkIndex": {
+          "type": "integer",
+          "description": "Zero-based chunk index (0 to 15)"
+        },
+        "data": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200000,
+          "description": "Base64 video chunk payload"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "listingId",
+        "ownerId",
+        "chunkIndex",
+        "data",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
     "AppNotification": {
       "title": "AppNotification",
       "description": "Real-time order notification delivered to sellers, buyers, and verified admin.",
@@ -823,6 +885,10 @@
     "/listings/{listingId}/photos/{photoId}": {
       "schema": { "$ref": "#/entities/ListingPhoto" },
       "description": "Up to 6 angle photos captured or uploaded for each marketplace listing."
+    },
+    "/listings/{listingId}/videoChunks/{chunkId}": {
+      "schema": { "$ref": "#/entities/ListingVideoChunk" },
+      "description": "Chunked walkthrough video segments recorded or uploaded for a listing."
     },
     "/inquiries/{inquiryId}": {
       "schema": { "$ref": "#/entities/Inquiry" },

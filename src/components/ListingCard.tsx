@@ -1,4 +1,4 @@
-import { Bookmark, Mic } from 'lucide-react';
+import { Bookmark, Mic, Video } from 'lucide-react';
 import { getCategoryLabel, getStatusLabel, getTransactionLabel, translations } from '../i18n';
 import { Language, Listing } from '../types';
 import { formatPrice, formatSpecsLine } from '../utils/format';
@@ -25,9 +25,27 @@ export function ListingCard({
   const statusLabel = getStatusLabel(listing.status, lang);
   const specsLine = formatSpecsLine(listing, lang);
   const formattedPrice = formatPrice(listing.price, listing.currency, listing.pricePeriod, lang);
+  const hasVideo = (listing.videoChunkCount || 0) > 0;
+
+  const categoryColorClass =
+    listing.category === 'vehicle'
+      ? 'text-[#1D4ED8]'
+      : listing.category === 'land'
+      ? 'text-[#B45309]'
+      : listing.category === 'goods'
+      ? 'text-[#9D174D]'
+      : 'text-[#0F5E48]';
+
+  const txColorClass =
+    listing.transactionType === 'rent' ? 'text-[#0369A1]' : 'text-[#9A3412]';
+
+  const primaryBtnClass =
+    listing.transactionType === 'rent'
+      ? 'bg-[#1E40AF] hover:bg-[#1E3A8A] text-white'
+      : 'bg-[#0F4C3A] hover:bg-[#0B3B2D] text-[#FFFDF8]';
 
   return (
-    <article className="group bg-white border border-zinc-200 rounded-xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <article className="group bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl overflow-hidden flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#B6AC99]">
       <div
         onClick={() => onSelect(listing, 'order')}
         role="button"
@@ -38,7 +56,7 @@ export function ListingCard({
             onSelect(listing, 'order');
           }
         }}
-        className="relative aspect-[4/3] w-full bg-zinc-100 overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800"
+        className="relative aspect-[4/3] w-full bg-[#E6DFD1] overflow-hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800"
       >
         <ResilientImage
           src={listing.imageUrl}
@@ -46,18 +64,24 @@ export function ListingCard({
           category={listing.category}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
-        {((listing.photoCount || 1) > 1 || listing.descriptionVoiceUrl) && (
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-3 py-2 flex items-center justify-between gap-2">
-            {listing.descriptionVoiceUrl ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-white">
-                <Mic className="w-3 h-3" />
-                <span>{t.voiceAttachedBadge}</span>
-              </span>
-            ) : (
-              <span />
-            )}
+        {((listing.photoCount || 1) > 1 || listing.descriptionVoiceUrl || hasVideo) && (
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-3 py-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              {hasVideo && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-200">
+                  <Video className="w-3 h-3" />
+                  <span>{t.videoAttachedBadge}</span>
+                </span>
+              )}
+              {listing.descriptionVoiceUrl && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-200">
+                  <Mic className="w-3 h-3" />
+                  <span>{t.voiceAttachedBadge}</span>
+                </span>
+              )}
+            </div>
             {(listing.photoCount || 1) > 1 && (
-              <span className="text-[11px] font-mono font-medium text-white tabular-nums">
+              <span className="text-[11px] font-mono font-medium text-emerald-200 tabular-nums">
                 {listing.photoCount} {t.photosCountSuffix}
               </span>
             )}
@@ -67,14 +91,18 @@ export function ListingCard({
 
       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between gap-3">
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2 text-xs text-zinc-500">
+          <div className="flex items-center justify-between gap-2 text-xs">
             <span className="truncate">
-              {categoryLabel} · {txLabel} · {listing.neighborhood}
+              <span className={`font-semibold ${categoryColorClass}`}>{categoryLabel}</span>
+              <span className="text-[#8B8171]"> · </span>
+              <span className={`font-medium ${txColorClass}`}>{txLabel}</span>
+              <span className="text-[#8B8171]"> · </span>
+              <span className="text-[#56625E]">{listing.neighborhood}</span>
             </span>
             {listing.status !== 'available' && (
               <span
-                className={`shrink-0 font-medium ${
-                  listing.status === 'closed' ? 'text-zinc-500' : 'text-amber-700'
+                className={`shrink-0 font-semibold ${
+                  listing.status === 'closed' ? 'text-[#6B726E]' : 'text-[#B45309]'
                 }`}
               >
                 {statusLabel}
@@ -82,21 +110,25 @@ export function ListingCard({
             )}
           </div>
 
-          <h3 className="text-base font-semibold text-zinc-900 leading-snug line-clamp-1">
+          <h3 className="text-base font-bold text-[#102620] leading-snug line-clamp-1">
             <button
               type="button"
               onClick={() => onSelect(listing, 'order')}
-              className="text-left hover:text-emerald-800 transition-colors focus-visible:outline-none focus-visible:underline"
+              className="text-left hover:text-[#0F5E48] transition-colors focus-visible:outline-none focus-visible:underline"
             >
               {listing.title}
             </button>
           </h3>
 
-          <p className="text-xs text-zinc-500 line-clamp-1 tabular-nums">{specsLine}</p>
+          <p className="text-xs text-[#4C5C57] line-clamp-1 tabular-nums">{specsLine}</p>
         </div>
 
-        <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
-          <span className="font-mono text-[15px] font-semibold text-emerald-900 tabular-nums whitespace-nowrap truncate">
+        <div className="pt-3 border-t border-[#EAE2D3] flex items-center justify-between gap-2">
+          <span
+            className={`font-mono text-[15px] font-bold tabular-nums whitespace-nowrap truncate ${
+              listing.transactionType === 'rent' ? 'text-[#1E40AF]' : 'text-[#9A3412]'
+            }`}
+          >
             {formattedPrice}
           </span>
 
@@ -107,8 +139,8 @@ export function ListingCard({
               aria-label={isSaved ? t.savedListing : t.saveListing}
               className={`min-w-[36px] min-h-[36px] px-2 rounded-lg border text-xs font-medium inline-flex items-center justify-center transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800 ${
                 isSaved
-                  ? 'border-emerald-800 bg-emerald-50 text-emerald-900'
-                  : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                  ? 'border-amber-600 bg-amber-100 text-amber-900'
+                  : 'border-[#CFC6B4] bg-[#F5F1E8] text-[#2F423B] hover:bg-[#EAE3D5]'
               }`}
             >
               <Bookmark className="w-3.5 h-3.5" fill={isSaved ? 'currentColor' : 'none'} />
@@ -117,7 +149,7 @@ export function ListingCard({
             <button
               type="button"
               onClick={() => onSelect(listing, 'message')}
-              className="min-h-[36px] px-3 py-1.5 text-xs font-medium text-zinc-800 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800"
+              className="min-h-[36px] px-3 py-1.5 text-xs font-semibold text-[#0F4235] bg-[#E3EFE9] hover:bg-[#D2E6DC] rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800"
             >
               {t.viewDetails}
             </button>
@@ -126,7 +158,7 @@ export function ListingCard({
               type="button"
               disabled={listing.status !== 'available'}
               onClick={() => onSelect(listing, 'order')}
-              className="min-h-[36px] px-3 py-1.5 text-xs font-medium text-white bg-emerald-800 hover:bg-emerald-900 disabled:bg-zinc-300 disabled:text-zinc-500 rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800"
+              className={`min-h-[36px] px-3 py-1.5 text-xs font-semibold disabled:bg-[#D6CFC2] disabled:text-[#6F6A60] rounded-lg transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800 ${primaryBtnClass}`}
             >
               {listing.transactionType === 'rent' ? t.reserveNow : t.orderNow}
             </button>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { Lock, X } from 'lucide-react';
 import { NEIGHBORHOOD_OPTIONS } from '../data/showcaseListings';
-import { createListing, fetchListingPhotos, updateListingDetails } from '../firebase';
+import { createListing, fetchListingPhotos, fetchListingVideo, updateListingDetails } from '../firebase';
 import { translations } from '../i18n';
 import { formatFirestoreUserError } from '../utils/format';
 import {
@@ -22,6 +22,7 @@ import {
   PhotoSlotsState,
   slotsToPhotosArray,
 } from './MultiAnglePhotoUploader';
+import { ListingVideoRecorder } from './ListingVideoRecorder';
 import { VoiceDescriptionRecorder } from './VoiceDescriptionRecorder';
 
 interface ListingFormModalProps {
@@ -53,6 +54,10 @@ export function ListingFormModal({
   const [description, setDescription] = useState('');
   const [descriptionVoiceUrl, setDescriptionVoiceUrl] = useState('');
   const [descriptionVoiceDurationSec, setDescriptionVoiceDurationSec] = useState(0);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoMimeType, setVideoMimeType] = useState('');
+  const [videoDurationSec, setVideoDurationSec] = useState(0);
+  const [videoModified, setVideoModified] = useState(false);
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState<CurrencyCode>('ETB');
   const [pricePeriod, setPricePeriod] = useState<PricePeriod>('total');
@@ -101,6 +106,7 @@ export function ListingFormModal({
       setPhotoSlots(fallbackSlots);
 
       let cancelled = false;
+      let loadedBlobUrl: string | null = null;
       fetchListingPhotos(editingListing.id)
         .then((existingPhotos) => {
           if (cancelled || existingPhotos.length === 0) return;
@@ -113,6 +119,27 @@ export function ListingFormModal({
         .catch(() => {
           // Keep cover fallback if subcollection empty
         });
+
+      setVideoUrl('');
+      setVideoMimeType(editingListing.videoMimeType || '');
+      setVideoDurationSec(editingListing.videoDurationSec || 0);
+      setVideoModified(false);
+      if ((editingListing.videoChunkCount || 0) > 0) {
+        fetchListingVideo(editingListing.id, editingListing.videoMimeType || 'video/webm')
+          .then((blobUrl) => {
+            if (cancelled) {
+              if (blobUrl && blobUrl.startsWith('blob:')) URL.revokeObjectURL(blobUrl);
+              return;
+            }
+            if (blobUrl) {
+              loadedBlobUrl = blobUrl;
+              setVideoUrl(blobUrl);
+            }
+          })
+          .catch(() => {
+            // Keep empty if unable to fetch existing video
+          });
+      }
 
       const s = editingListing.specs || {};
       const inferredRc: RoomClass =
@@ -132,6 +159,9 @@ export function ListingFormModal({
 
       return () => {
         cancelled = true;
+        if (loadedBlobUrl && loadedBlobUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(loadedBlobUrl);
+        }
       };
     } else {
       setCategory('apartment');
@@ -143,6 +173,10 @@ export function ListingFormModal({
       setDescription('');
       setDescriptionVoiceUrl('');
       setDescriptionVoiceDurationSec(0);
+      setVideoUrl('');
+      setVideoMimeType('');
+      setVideoDurationSec(0);
+      setVideoModified(false);
       setPrice('');
       setCurrency('ETB');
       setPricePeriod('total');
@@ -261,6 +295,10 @@ export function ListingFormModal({
         city,
         imageUrl: uploadedPhotos[0].imageDataUrl,
         photos: uploadedPhotos,
+        videoDataUrl: videoModified ? videoUrl : undefined,
+        videoMimeType: videoModified ? videoMimeType : undefined,
+        videoDurationSec: videoModified ? videoDurationSec : undefined,
+        videoModified,
         specs,
         sellerPhone: sellerPhone.trim(),
       };
@@ -280,21 +318,21 @@ export function ListingFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-zinc-950/50 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-[#071A15]/65 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="listing-form-title"
     >
-      <div className="bg-white border border-zinc-200 rounded-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-xl">
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200 px-6 py-4 flex items-center justify-between">
-          <h2 id="listing-form-title" className="text-lg font-bold text-zinc-900">
+      <div className="bg-[#FBF8F2] border border-[#CFC5B3] rounded-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 z-10 bg-[#0E362C] border-b border-[#215C4D] px-6 py-4 flex items-center justify-between text-[#FCF9F2]">
+          <h2 id="listing-form-title" className="text-lg font-bold text-amber-200">
             {editingListing ? t.editListingTitle : t.createListingTitle}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="min-w-[40px] min-h-[40px] rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+            className="min-w-[40px] min-h-[40px] rounded-lg border border-[#2C6F5E] bg-[#154A3D] flex items-center justify-center text-emerald-100 hover:text-white hover:bg-[#1C5E4E]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -484,8 +522,8 @@ export function ListingFormModal({
 
             {(category === 'apartment' || category === 'house') && (
               <div className="space-y-4 pt-1">
-                <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-3">
-                  <div className="text-xs font-semibold text-zinc-900">
+                <div className="p-4 rounded-xl bg-[#E8F3EE] border border-[#B7DACA] space-y-3">
+                  <div className="text-xs font-bold text-[#0B3B2E]">
                     {t.rentalOptionsHeading}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -700,12 +738,23 @@ export function ListingFormModal({
               />
             </div>
 
-            <div className="pt-2 border-t border-zinc-200">
+            <div className="pt-2 border-t border-zinc-200 space-y-5">
               <MultiAnglePhotoUploader
                 lang={lang}
                 category={category}
                 slots={photoSlots}
                 onChangeSlots={setPhotoSlots}
+              />
+              <ListingVideoRecorder
+                lang={lang}
+                videoUrl={videoUrl}
+                durationSec={videoDurationSec}
+                onChange={(nextUrl, nextMime, nextSecs) => {
+                  setVideoUrl(nextUrl);
+                  setVideoMimeType(nextMime);
+                  setVideoDurationSec(nextSecs);
+                  setVideoModified(true);
+                }}
               />
             </div>
 

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { User } from 'firebase/auth';
-import { LogOut, Menu, Plus, X } from 'lucide-react';
+import { KeyRound, LogOut, Menu, Plus, ShoppingBag, X } from 'lucide-react';
 import { translations } from '../i18n';
-import { Language } from '../types';
+import { Language, TransactionType } from '../types';
 import { DashboardTheme } from './DashboardView';
+import { KasLogo } from './KasLogo';
 
 export type NavSection =
   | 'explore'
@@ -18,10 +19,14 @@ export type NavSection =
 interface NavbarProps {
   lang: Language;
   activeNav: NavSection;
+  activeBuyerMode?: TransactionType;
   dashboardTheme?: DashboardTheme;
   unreadNotifCount?: number;
+  isAdmin?: boolean;
   user?: User | null;
   onSelectNav: (nav: NavSection) => void;
+  onOpenBuyMode: () => void;
+  onOpenRentMode: () => void;
   onOpenSellPage: () => void;
   onSignIn?: () => void;
   onSignOut?: () => void;
@@ -30,10 +35,14 @@ interface NavbarProps {
 export function Navbar({
   lang,
   activeNav,
+  activeBuyerMode = 'sale',
   dashboardTheme = 'cobalt',
   unreadNotifCount = 0,
+  isAdmin = false,
   user = null,
   onSelectNav,
+  onOpenBuyMode,
+  onOpenRentMode,
   onOpenSellPage,
   onSignIn,
   onSignOut,
@@ -41,13 +50,15 @@ export function Navbar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const t = translations[lang];
   const isDash = activeNav === 'dashboard';
+  const isBuyActive = activeNav === 'buyer' && activeBuyerMode === 'sale';
+  const isRentActive = activeNav === 'buyer' && activeBuyerMode === 'rent';
 
   const links: { key: Exclude<NavSection, 'sell' | 'goods' | 'vehicles'>; label: string }[] = [
     { key: 'explore', label: t.navExplore },
     { key: 'dashboard', label: t.navDashboard },
     { key: 'buyer', label: t.navBuyerStudio },
     { key: 'properties', label: t.navProperties },
-    { key: 'connections', label: t.navConnections },
+    { key: 'connections', label: isAdmin ? t.navConnections : t.navConnectionsUser },
   ];
 
   const handleNavClick = (key: NavSection) => {
@@ -76,68 +87,32 @@ export function Navbar({
       ? 'after:bg-amber-400 text-white font-semibold'
       : 'after:bg-sky-400 text-white font-semibold';
 
-  const emblemBgFill = isDash
-    ? dashboardTheme === 'indigo'
-      ? '#4f46e5'
-      : dashboardTheme === 'amber'
-      ? '#d97706'
-      : '#0284c7'
-    : '#065f46';
-
   return (
     <header
       className={`sticky top-0 z-40 backdrop-blur-md border-t-2 border-b transition-colors ${
         isDash
           ? dashHeaderBg
-          : 'bg-white/95 border-t-emerald-800 border-b-zinc-200/90 text-zinc-900'
+          : 'bg-[#0C2E26]/95 border-t-amber-400 border-b-[#1B5244] text-[#FBF8F1]'
       }`}
     >
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-8">
-        {/* Zone 1: Custom Kas Market Monogram & Display Wordmark */}
+        {/* Zone 1: Custom Kas Market Architectural Crest & Wordmark */}
         <button
           type="button"
           onClick={() => handleNavClick('explore')}
-          className={`inline-flex items-center gap-2.5 whitespace-nowrap shrink-0 rounded-md py-1 pr-1 focus-visible:outline-none focus-visible:ring-2 ${
-            isDash
-              ? 'text-white focus-visible:ring-sky-400'
-              : 'text-zinc-950 focus-visible:ring-emerald-800'
+          aria-label={t.brand}
+          className={`group inline-flex items-center whitespace-nowrap shrink-0 rounded-lg py-1 pr-1 focus-visible:outline-none focus-visible:ring-2 ${
+            isDash ? 'focus-visible:ring-sky-400' : 'focus-visible:ring-amber-300'
           }`}
         >
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-            className="shrink-0"
-          >
-            <rect width="32" height="32" rx="7" fill={emblemBgFill} />
-            <path
-              d="M7.5 14.5L16 7.5L24.5 14.5"
-              stroke="white"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M11.5 14.5V24M11.5 19.2L19.5 14.5M14.8 17.3L20.5 24"
-              stroke="white"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="font-display text-lg sm:text-[19px] font-bold tracking-tight">
-            {t.brand}
-          </span>
+          <KasLogo variant={isDash ? dashboardTheme : 'emerald'} size="md" />
         </button>
 
         {/* Zone 2: Clean Single-Line Typographic Navigation Track */}
         <nav
           aria-label="Primary navigation"
-          className={`hidden md:flex items-stretch h-16 gap-6 lg:gap-8 text-sm font-medium ${
-            isDash ? 'text-slate-300' : 'text-zinc-600'
+          className={`hidden lg:flex items-stretch h-16 gap-5 xl:gap-7 text-sm font-medium ${
+            isDash ? 'text-slate-300' : 'text-emerald-100/85'
           }`}
         >
           {links.map((link) => {
@@ -148,22 +123,22 @@ export function Navbar({
                 type="button"
                 onClick={() => handleNavClick(link.key)}
                 className={`relative h-full inline-flex items-center gap-1 whitespace-nowrap shrink-0 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset after:content-[''] after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:transition-opacity after:duration-150 ${
-                  isDash ? 'focus-visible:ring-sky-400' : 'focus-visible:ring-emerald-800'
+                  isDash ? 'focus-visible:ring-sky-400' : 'focus-visible:ring-amber-300'
                 } ${
                   isActive
                     ? isDash
                       ? `${dashIndicatorColor} after:opacity-100`
-                      : 'text-zinc-950 font-semibold after:bg-emerald-800 after:opacity-100'
+                      : 'text-amber-300 font-semibold after:bg-amber-400 after:opacity-100'
                     : isDash
                     ? 'hover:text-white after:bg-slate-400 after:opacity-0 hover:after:opacity-50'
-                    : 'hover:text-zinc-950 after:bg-zinc-400 after:opacity-0 hover:after:opacity-50'
+                    : 'hover:text-amber-200 after:bg-emerald-300 after:opacity-0 hover:after:opacity-50'
                 }`}
               >
                 <span>{link.label}</span>
-                {link.key === 'connections' && unreadNotifCount > 0 ? (
+                {link.key === 'connections' && isAdmin && unreadNotifCount > 0 ? (
                   <span
                     className={`font-mono text-xs tabular-nums ${
-                      isDash ? 'text-sky-300' : 'text-emerald-800 font-semibold'
+                      isDash ? 'text-sky-300' : 'text-amber-300 font-semibold'
                     }`}
                   >
                     ({unreadNotifCount})
@@ -174,24 +149,103 @@ export function Navbar({
           })}
         </nav>
 
-        {/* Zone 3: Single Primary Action + Mobile Drawer Toggle */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Zone 3: Buy · Rent · Sell Action Group + Mobile Drawer Toggle */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="hidden sm:flex items-center gap-1.5" role="group" aria-label="Buy, Rent, and Sell">
+            <button
+              type="button"
+              onClick={() => {
+                onOpenBuyMode();
+                setMobileOpen(false);
+              }}
+              aria-current={isBuyActive ? 'page' : undefined}
+              className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-sm font-semibold rounded-lg border transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                isDash
+                  ? isBuyActive
+                    ? 'bg-emerald-500 border-emerald-400 text-slate-950 focus-visible:ring-emerald-400'
+                    : 'bg-slate-800/80 border-slate-700 text-slate-100 hover:bg-slate-800 focus-visible:ring-sky-400'
+                  : isBuyActive
+                  ? 'bg-emerald-400 border-emerald-300 text-[#07261E] shadow-sm focus-visible:ring-emerald-300'
+                  : 'bg-[#13463A] hover:bg-[#195A4B] border-[#27705E] text-[#FCF8EE] focus-visible:ring-emerald-300'
+              }`}
+            >
+              <ShoppingBag
+                className={`w-3.5 h-3.5 shrink-0 ${
+                  isBuyActive
+                    ? isDash
+                      ? 'text-slate-950'
+                      : 'text-[#07261E]'
+                    : 'text-emerald-300'
+                }`}
+              />
+              <span>{t.navBuy}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onOpenRentMode();
+                setMobileOpen(false);
+              }}
+              aria-current={isRentActive ? 'page' : undefined}
+              className={`inline-flex items-center gap-1.5 h-10 px-3.5 text-sm font-semibold rounded-lg border transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                isDash
+                  ? isRentActive
+                    ? 'bg-sky-400 border-sky-300 text-slate-950 focus-visible:ring-sky-300'
+                    : 'bg-slate-800/80 border-slate-700 text-slate-100 hover:bg-slate-800 focus-visible:ring-sky-400'
+                  : isRentActive
+                  ? 'bg-sky-400 border-sky-300 text-[#071F2E] shadow-sm focus-visible:ring-sky-300'
+                  : 'bg-[#123D4E] hover:bg-[#184E64] border-[#25667E] text-[#F2F9FD] focus-visible:ring-sky-300'
+              }`}
+            >
+              <KeyRound
+                className={`w-3.5 h-3.5 shrink-0 ${
+                  isRentActive
+                    ? isDash
+                      ? 'text-slate-950'
+                      : 'text-[#071F2E]'
+                    : 'text-sky-300'
+                }`}
+              />
+              <span>{t.navRent}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onOpenSellPage();
+                setMobileOpen(false);
+              }}
+              aria-current={activeNav === 'sell' ? 'page' : undefined}
+              className={`inline-flex items-center gap-1.5 h-10 px-4 text-sm font-semibold rounded-lg shadow-sm transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                isDash
+                  ? dashAccentBtn
+                  : activeNav === 'sell'
+                  ? 'bg-[#FCF8EE] text-[#0C2E26] ring-2 ring-amber-300 focus-visible:ring-amber-300'
+                  : 'bg-amber-400 hover:bg-amber-300 text-[#0B2620] focus-visible:ring-amber-300'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+              <span>{t.navSell}</span>
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => {
               onOpenSellPage();
               setMobileOpen(false);
             }}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg shadow-sm transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+            className={`sm:hidden inline-flex items-center gap-1.5 h-10 px-3.5 text-sm font-semibold rounded-lg shadow-sm transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
               isDash
                 ? dashAccentBtn
                 : activeNav === 'sell'
-                ? 'bg-zinc-900 text-white focus-visible:ring-emerald-800'
-                : 'bg-emerald-800 hover:bg-emerald-900 text-white focus-visible:ring-emerald-800'
+                ? 'bg-[#FCF8EE] text-[#0C2E26] focus-visible:ring-amber-300'
+                : 'bg-amber-400 hover:bg-amber-300 text-[#0B2620] focus-visible:ring-amber-300'
             }`}
           >
-            <Plus className="w-3.5 h-3.5 stroke-[2.25] shrink-0" />
-            <span>{t.postListing}</span>
+            <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+            <span>{t.navSell}</span>
           </button>
 
           <button
@@ -199,10 +253,10 @@ export function Navbar({
             onClick={() => setMobileOpen((prev) => !prev)}
             aria-label="Toggle navigation menu"
             aria-expanded={mobileOpen}
-            className={`md:hidden min-w-[44px] min-h-[44px] p-2 rounded-lg border flex items-center justify-center transition-colors ${
+            className={`lg:hidden min-w-[44px] min-h-[44px] p-2 rounded-lg border flex items-center justify-center transition-colors ${
               isDash
                 ? 'text-slate-200 hover:text-white border-slate-700 hover:bg-slate-800'
-                : 'text-zinc-700 hover:text-zinc-950 border-zinc-200 hover:bg-zinc-100'
+                : 'text-emerald-100 hover:text-amber-200 border-[#226151] hover:bg-[#144338]'
             }`}
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -214,12 +268,63 @@ export function Navbar({
       {mobileOpen && (
         <nav
           aria-label="Mobile navigation"
-          className={`md:hidden border-t px-4 py-2 divide-y ${
+          className={`lg:hidden border-t px-4 py-3 divide-y ${
             isDash
               ? 'border-slate-800 bg-slate-900 divide-slate-800/70'
-              : 'border-zinc-200 bg-white divide-zinc-100'
+              : 'border-[#1B5244] bg-[#0F372E] divide-[#1C5144]'
           }`}
         >
+          <div className="sm:hidden grid grid-cols-3 gap-2 pb-3">
+            <button
+              type="button"
+              onClick={() => {
+                onOpenBuyMode();
+                setMobileOpen(false);
+              }}
+              className={`min-h-[44px] px-3 py-2 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                isBuyActive
+                  ? 'bg-emerald-400 border-emerald-300 text-[#07261E]'
+                  : isDash
+                  ? 'bg-slate-800 border-slate-700 text-slate-100'
+                  : 'bg-[#13463A] border-[#27705E] text-[#FCF8EE]'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+              <span>{t.navBuy}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onOpenRentMode();
+                setMobileOpen(false);
+              }}
+              className={`min-h-[44px] px-3 py-2 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                isRentActive
+                  ? 'bg-sky-400 border-sky-300 text-[#071F2E]'
+                  : isDash
+                  ? 'bg-slate-800 border-slate-700 text-slate-100'
+                  : 'bg-[#123D4E] border-[#25667E] text-[#F2F9FD]'
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5 shrink-0" />
+              <span>{t.navRent}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onOpenSellPage();
+                setMobileOpen(false);
+              }}
+              className={`min-h-[44px] px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                activeNav === 'sell'
+                  ? 'bg-[#FCF8EE] text-[#0C2E26]'
+                  : 'bg-amber-400 text-[#0B2620]'
+              }`}
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+              <span>{t.navSell}</span>
+            </button>
+          </div>
           {links.map((link) => {
             const isActive = activeNav === link.key;
             return (
@@ -231,17 +336,17 @@ export function Navbar({
                   isActive
                     ? isDash
                       ? 'text-white font-semibold'
-                      : 'text-emerald-900 font-semibold'
+                      : 'text-amber-300 font-semibold'
                     : isDash
                     ? 'text-slate-300 hover:text-white'
-                    : 'text-zinc-700 hover:text-zinc-950'
+                    : 'text-emerald-100 hover:text-white'
                 }`}
               >
                 <span>{link.label}</span>
-                {link.key === 'connections' && unreadNotifCount > 0 ? (
+                {link.key === 'connections' && isAdmin && unreadNotifCount > 0 ? (
                   <span
                     className={`font-mono text-xs tabular-nums ${
-                      isDash ? 'text-sky-300' : 'text-emerald-800 font-semibold'
+                      isDash ? 'text-sky-300' : 'text-amber-300 font-semibold'
                     }`}
                   >
                     ({unreadNotifCount})
@@ -256,7 +361,7 @@ export function Navbar({
                 <>
                   <span
                     className={`text-xs truncate max-w-[180px] ${
-                      isDash ? 'text-slate-300' : 'text-zinc-600'
+                      isDash ? 'text-slate-300' : 'text-emerald-100'
                     }`}
                   >
                     {user.displayName || user.email || t.signedInAs}
@@ -271,7 +376,7 @@ export function Navbar({
                       className={`inline-flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-lg border text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
                         isDash
                           ? 'border-slate-700 text-slate-200 hover:bg-slate-800'
-                          : 'border-zinc-200 text-zinc-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200'
+                          : 'border-[#2B6E5E] text-emerald-100 hover:bg-red-900/60 hover:text-red-200 hover:border-red-400/50'
                       }`}
                     >
                       <LogOut className="w-3.5 h-3.5" />
@@ -287,8 +392,10 @@ export function Navbar({
                       onSignIn();
                       setMobileOpen(false);
                     }}
-                    className={`w-full min-h-[44px] px-4 py-2 rounded-lg text-xs font-medium text-white transition-colors ${
-                      isDash ? dashAccentBtn : 'bg-emerald-800 hover:bg-emerald-900'
+                    className={`w-full min-h-[44px] px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                      isDash
+                        ? `${dashAccentBtn}`
+                        : 'bg-amber-400 hover:bg-amber-300 text-[#0B2620]'
                     }`}
                   >
                     {t.signInGoogle}

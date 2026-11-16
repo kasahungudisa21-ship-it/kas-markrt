@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Loader2,
   Lock,
   MapPin,
   Minus,
@@ -13,10 +14,11 @@ import {
   ShoppingBag,
   Trash2,
   UserCheck,
+  Video,
   Volume2,
   X,
 } from 'lucide-react';
-import { fetchListingPhotos, placeOrder, sendListingInquiry } from '../firebase';
+import { fetchListingPhotos, fetchListingVideo, placeOrder, sendListingInquiry } from '../firebase';
 import {
   getCategoryLabel,
   getRoomClassLabel,
@@ -80,9 +82,11 @@ export function ListingDetailModal({
   const [msgSentSuccess, setMsgSentSuccess] = useState(false);
   const [msgError, setMsgError] = useState('');
 
-  // Multi-angle gallery state
+  // Multi-angle gallery & video state
   const [galleryPhotos, setGalleryPhotos] = useState<ListingPhoto[]>([]);
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -93,6 +97,8 @@ export function ListingDetailModal({
     setMsgSentSuccess(false);
     setMsgError('');
     setActivePhotoIdx(0);
+    setVideoSrc(null);
+    setVideoLoading(false);
 
     if (!listing) {
       setGalleryPhotos([]);
@@ -109,24 +115,53 @@ export function ListingDetailModal({
 
     if (listing.photos && listing.photos.length > 0) {
       setGalleryPhotos(listing.photos);
-      return;
+    } else {
+      setGalleryPhotos(fallback);
     }
 
-    setGalleryPhotos(fallback);
-
     let cancelled = false;
-    fetchListingPhotos(listing.id)
-      .then((loaded) => {
-        if (!cancelled && loaded.length > 0) {
-          setGalleryPhotos(loaded);
-        }
-      })
-      .catch(() => {
-        // Keep cover photo fallback
-      });
+    let activeBlobUrl: string | null = null;
+
+    if (!listing.photos || listing.photos.length === 0) {
+      fetchListingPhotos(listing.id)
+        .then((loaded) => {
+          if (!cancelled && loaded.length > 0) {
+            setGalleryPhotos(loaded);
+          }
+        })
+        .catch(() => {
+          // Keep cover photo fallback
+        });
+    }
+
+    if (listing.videoUrl) {
+      setVideoSrc(listing.videoUrl);
+    } else if ((listing.videoChunkCount || 0) > 0) {
+      setVideoLoading(true);
+      fetchListingVideo(listing.id, listing.videoMimeType || 'video/webm')
+        .then((blobUrl) => {
+          if (cancelled) {
+            if (blobUrl && blobUrl.startsWith('blob:')) URL.revokeObjectURL(blobUrl);
+            return;
+          }
+          if (blobUrl) {
+            activeBlobUrl = blobUrl;
+            setVideoSrc(blobUrl);
+          }
+        })
+        .catch(() => {
+          // Ignore unavailable video
+        })
+        .finally(() => {
+          if (!cancelled) setVideoLoading(false);
+        });
+    }
 
     return () => {
       cancelled = true;
+      if (activeBlobUrl && activeBlobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(activeBlobUrl);
+      }
     };
   }, [listing, initialTab, lang]);
 
@@ -262,21 +297,21 @@ export function ListingDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-zinc-950/50 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-[#071A15]/65 backdrop-blur-[2px] flex items-center justify-center p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="listing-detail-title"
     >
-      <div className="bg-white border border-zinc-200 rounded-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-xl">
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-200 px-5 py-4 flex items-center justify-between gap-4">
-          <div className="text-xs text-zinc-500 truncate">
+      <div className="bg-[#FBF8F2] border border-[#CFC5B3] rounded-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div className="sticky top-0 z-10 bg-[#0E362C] border-b border-[#215C4D] px-5 py-4 flex items-center justify-between gap-4 text-[#FCF9F2]">
+          <div className="text-xs font-medium text-amber-200 truncate">
             {categoryLabel} · {txLabel} · {listing.neighborhood}, {listing.city}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="min-w-[40px] min-h-[40px] rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+            className="min-w-[40px] min-h-[40px] rounded-lg border border-[#2C6F5E] bg-[#154A3D] flex items-center justify-center text-emerald-100 hover:text-white hover:bg-[#1C5E4E]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -369,17 +404,50 @@ export function ListingDetailModal({
               );
             })()}
 
+            {((listing.videoChunkCount || 0) > 0 || videoSrc || videoLoading) && (
+              <div className="p-4 rounded-xl bg-[#E5F0FC] border border-[#AECCEF] space-y-2.5">
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="font-bold text-[#142F66] flex items-center gap-2">
+                    <Video className="w-4 h-4 text-[#1D4ED8] shrink-0" />
+                    <span>{t.videoPlayHeading}</span>
+                  </span>
+                  {typeof listing.videoDurationSec === 'number' && listing.videoDurationSec > 0 && (
+                    <span className="font-mono font-semibold text-[#1E40AF] tabular-nums">
+                      {Math.floor(listing.videoDurationSec / 60)}:
+                      {(listing.videoDurationSec % 60).toString().padStart(2, '0')}
+                    </span>
+                  )}
+                </div>
+                {videoLoading ? (
+                  <div className="py-8 flex items-center justify-center gap-2 text-xs text-[#1E3A8A]">
+                    <Loader2 className="w-4 h-4 animate-spin text-[#1D4ED8]" />
+                    <span>{t.videoLoadingLabel}</span>
+                  </div>
+                ) : videoSrc ? (
+                  <div className="rounded-lg overflow-hidden bg-black border border-[#9BBDE6]">
+                    <video
+                      controls
+                      playsInline
+                      preload="metadata"
+                      src={videoSrc}
+                      className="w-full max-h-[380px] object-contain mx-auto"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            )}
+
             <div className="space-y-4">
               {listing.descriptionVoiceUrl && (
-                <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2.5">
+                <div className="p-4 rounded-xl bg-[#E3F5EE] border border-[#A7D9C6] space-y-2.5">
                   <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="font-semibold text-emerald-950 flex items-center gap-2">
-                      <Volume2 className="w-4 h-4 text-emerald-800 shrink-0" />
+                    <span className="font-bold text-[#0B3B2E] flex items-center gap-2">
+                      <Volume2 className="w-4 h-4 text-[#0F5E48] shrink-0" />
                       <span>{t.voicePlayHeading}</span>
                     </span>
                     {typeof listing.descriptionVoiceDurationSec === 'number' &&
                       listing.descriptionVoiceDurationSec > 0 && (
-                        <span className="font-mono text-emerald-900 tabular-nums">
+                        <span className="font-mono font-semibold text-[#0F5E48] tabular-nums">
                           {Math.floor(listing.descriptionVoiceDurationSec / 60)}:
                           {(listing.descriptionVoiceDurationSec % 60).toString().padStart(2, '0')}
                         </span>
@@ -390,20 +458,20 @@ export function ListingDetailModal({
               )}
 
               {listing.description.trim() && (
-                <p className="text-[15px] leading-relaxed text-zinc-700 whitespace-pre-line">
+                <p className="text-[15px] leading-relaxed text-[#253B34] whitespace-pre-line">
                   {listing.description}
                 </p>
               )}
             </div>
 
             {specRows.length > 0 && (
-              <div className="pt-4 border-t border-zinc-200">
-                <h4 className="text-sm font-semibold text-zinc-900 mb-3">{t.specsHeading}</h4>
-                <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+              <div className="pt-4 border-t border-[#DFD7C8]">
+                <h4 className="text-sm font-bold text-[#0F4C3A] mb-3">{t.specsHeading}</h4>
+                <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 bg-[#F2EDE2] p-4 rounded-xl border border-[#DFD7C8]">
                   {specRows.map((row) => (
                     <div key={row.label}>
-                      <dt className="text-xs text-zinc-500">{row.label}</dt>
-                      <dd className="text-sm font-medium text-zinc-900 tabular-nums mt-0.5">
+                      <dt className="text-xs text-[#6B5B45] font-medium">{row.label}</dt>
+                      <dd className="text-sm font-bold text-[#102620] tabular-nums mt-0.5">
                         {row.value}
                       </dd>
                     </div>
@@ -414,37 +482,41 @@ export function ListingDetailModal({
           </div>
 
           <div className="lg:col-span-5">
-            <div className="lg:sticky lg:top-20 bg-zinc-50 border border-zinc-200 rounded-xl p-5 sm:p-6 space-y-5">
+            <div className="lg:sticky lg:top-20 bg-[#EFE9DC] border border-[#CFC5B3] rounded-xl p-5 sm:p-6 space-y-5 shadow-sm">
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2 text-xs text-zinc-500">
+                <div className="flex items-center justify-between gap-2 text-xs font-semibold text-[#0F5E48]">
                   <span>{statusLabel}</span>
                 </div>
                 <h2
                   id="listing-detail-title"
-                  className="text-xl sm:text-2xl font-bold text-zinc-900 leading-snug"
+                  className="text-xl sm:text-2xl font-bold text-[#102620] leading-snug"
                 >
                   {listing.title}
                 </h2>
-                <div className="font-mono text-2xl font-semibold text-emerald-900 tabular-nums pt-1">
+                <div
+                  className={`font-mono text-2xl font-bold tabular-nums pt-1 ${
+                    listing.transactionType === 'rent' ? 'text-[#1E40AF]' : 'text-[#9A3412]'
+                  }`}
+                >
                   {formattedPrice}
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-zinc-200 grid grid-cols-2 gap-4 text-xs">
+              <div className="pt-4 border-t border-[#D8CEBC] grid grid-cols-2 gap-4 text-xs">
                 <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-[#B45309] shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-zinc-500">{t.locationLabel}</div>
-                    <div className="font-medium text-zinc-900">
+                    <div className="text-[#6B5B45]">{t.locationLabel}</div>
+                    <div className="font-semibold text-[#102620]">
                       {listing.neighborhood}, {listing.city}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <UserCheck className="w-4 h-4 text-zinc-400 shrink-0 mt-0.5" />
+                  <UserCheck className="w-4 h-4 text-[#0F5E48] shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-zinc-500">{t.sellerLabel}</div>
-                    <div className="font-medium text-zinc-900 truncate">{listing.sellerName}</div>
+                    <div className="text-[#6B5B45]">{t.sellerLabel}</div>
+                    <div className="font-semibold text-[#102620] truncate">{listing.sellerName}</div>
                   </div>
                 </div>
               </div>
@@ -509,7 +581,9 @@ export function ListingDetailModal({
                 </div>
 
                 {isOwner ? (
-                  <p className="text-xs leading-relaxed text-zinc-600">{t.ownListingNotice}</p>
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    {isAdmin ? t.ownListingNotice : t.ownListingNoticeUser}
+                  </p>
                 ) : activeTab === 'order' ? (
                   listing.status !== 'available' ? (
                     <p className="text-xs text-amber-800">{statusLabel}</p>
@@ -533,19 +607,23 @@ export function ListingDetailModal({
                             {t.orderConfirmedTitle} ·{' '}
                             <span className="font-mono">{confirmedOrderNumber}</span>
                           </div>
-                          <p className="text-xs text-emerald-800">{t.orderConfirmedBody}</p>
+                          <p className="text-xs text-emerald-800">
+                            {isAdmin ? t.orderConfirmedBody : t.orderConfirmedBuyerBody}
+                          </p>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onClose();
-                          onViewOrders();
-                        }}
-                        className="w-full py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium"
-                      >
-                        {t.viewMyOrders}
-                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            onViewOrders();
+                          }}
+                          className="w-full py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium"
+                        >
+                          {t.viewMyOrders}
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <form onSubmit={handleOrderSubmit} className="space-y-3">

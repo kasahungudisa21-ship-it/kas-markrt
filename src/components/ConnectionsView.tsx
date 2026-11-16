@@ -75,7 +75,7 @@ export function ConnectionsView({
   onSignOut,
 }: ConnectionsViewProps) {
   const t = translations[lang];
-  const [activeTab, setActiveTab] = useState<ConnectionsTab>('orders');
+  const [activeTab, setActiveTab] = useState<ConnectionsTab>(isAdmin ? 'orders' : 'listings');
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [desktopPermission, setDesktopPermission] = useState<BrowserNotifPermission>(() =>
@@ -84,10 +84,19 @@ export function ConnectionsView({
 
   useEffect(() => {
     if (requestedTab) {
-      setActiveTab(requestedTab);
+      if (!isAdmin && (requestedTab === 'orders' || requestedTab === 'notifications')) {
+        setActiveTab('listings');
+      } else {
+        setActiveTab(requestedTab);
+      }
       onClearRequestedTab?.();
     }
-  }, [requestedTab, onClearRequestedTab]);
+  }, [requestedTab, isAdmin, onClearRequestedTab]);
+
+  const effectiveTab: ConnectionsTab =
+    !isAdmin && (activeTab === 'orders' || activeTab === 'notifications')
+      ? 'listings'
+      : activeTab;
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);
   const formatNotifTime = (ms: number) => {
@@ -127,30 +136,32 @@ export function ConnectionsView({
   };
 
   return (
-    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-10 space-y-8 min-h-[70vh]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-200">
+    <section className="max-w-[1280px] mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 min-h-[70vh]">
+      <div className="rounded-2xl bg-gradient-to-r from-[#162C38] via-[#133A3B] to-[#0E392E] border border-[#245A59] p-6 sm:p-7 text-[#FCF9F2] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div className="space-y-1">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 mb-1"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200 mb-1"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{t.backToMarketplace}</span>
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900">{t.connectionsTitle}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#FCF8EE]">
+            {isAdmin ? t.connectionsTitle : t.connectionsUserTitle}
+          </h1>
         </div>
 
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-xs text-zinc-600 truncate max-w-[200px]">
+              <span className="text-xs font-medium text-emerald-100 truncate max-w-[200px]">
                 {user.displayName || user.email}
               </span>
               <button
                 type="button"
                 onClick={onSignOut}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-zinc-300 text-xs font-medium text-zinc-700 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors whitespace-nowrap shrink-0"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#2B6E68] bg-[#174847] hover:bg-red-900/70 hover:text-red-100 hover:border-red-400/50 text-xs font-medium text-emerald-100 transition-colors whitespace-nowrap shrink-0"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>{t.signOut}</span>
@@ -160,7 +171,7 @@ export function ConnectionsView({
             <button
               type="button"
               onClick={onSignIn}
-              className="px-4 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-medium whitespace-nowrap"
+              className="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-[#0B2620] text-xs font-bold whitespace-nowrap"
             >
               {t.signInGoogle}
             </button>
@@ -168,43 +179,51 @@ export function ConnectionsView({
         </div>
       </div>
 
-      <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit max-w-full overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setActiveTab('orders')}
-          className={`px-4 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
-            activeTab === 'orders'
-              ? 'bg-white text-zinc-900 shadow-sm'
-              : 'text-zinc-600 hover:text-zinc-900'
-          }`}
-        >
-          {t.tabOrders} ({orders.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('notifications')}
-          className={`px-4 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
-            activeTab === 'notifications'
-              ? 'bg-white text-zinc-900 shadow-sm'
-              : 'text-zinc-600 hover:text-zinc-900'
-          }`}
-        >
-          {t.tabNotifications}
-          {unreadNotifications.length > 0 ? (
-            <span className="ml-1 font-mono tabular-nums text-emerald-800 font-semibold">
-              ({unreadNotifications.length})
-            </span>
-          ) : (
-            <span className="ml-1 tabular-nums">({notifications.length})</span>
-          )}
-        </button>
+      <div className="flex items-center gap-1 p-1.5 bg-[#DFD7C8] border border-[#CFC5B3] rounded-xl w-fit max-w-full overflow-x-auto">
+        {isAdmin && (
+          <>
+            <button
+              type="button"
+              onClick={() => setActiveTab('orders')}
+              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                effectiveTab === 'orders'
+                  ? 'bg-[#0F4C3A] text-white shadow-sm'
+                  : 'text-[#2D4039] hover:text-[#0F3D32] hover:bg-[#EFE9DC]'
+              }`}
+            >
+              {t.tabOrders} ({orders.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('notifications')}
+              className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                effectiveTab === 'notifications'
+                  ? 'bg-[#B45309] text-white shadow-sm'
+                  : 'text-[#2D4039] hover:text-[#5C2D0C] hover:bg-[#EFE9DC]'
+              }`}
+            >
+              {t.tabNotifications}
+              {unreadNotifications.length > 0 ? (
+                <span
+                  className={`ml-1 font-mono tabular-nums font-bold ${
+                    effectiveTab === 'notifications' ? 'text-amber-100' : 'text-[#9A3412]'
+                  }`}
+                >
+                  ({unreadNotifications.length})
+                </span>
+              ) : (
+                <span className="ml-1 tabular-nums">({notifications.length})</span>
+              )}
+            </button>
+          </>
+        )}
         <button
           type="button"
           onClick={() => setActiveTab('listings')}
-          className={`px-4 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
-            activeTab === 'listings'
-              ? 'bg-white text-zinc-900 shadow-sm'
-              : 'text-zinc-600 hover:text-zinc-900'
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+            effectiveTab === 'listings'
+              ? 'bg-[#1E40AF] text-white shadow-sm'
+              : 'text-[#2D4039] hover:text-[#142F66] hover:bg-[#EFE9DC]'
           }`}
         >
           {t.tabMyListings} ({isAdmin ? allListings.length : myListings.length})
@@ -212,10 +231,10 @@ export function ConnectionsView({
         <button
           type="button"
           onClick={() => setActiveTab('inbox')}
-          className={`px-4 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
-            activeTab === 'inbox'
-              ? 'bg-white text-zinc-900 shadow-sm'
-              : 'text-zinc-600 hover:text-zinc-900'
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+            effectiveTab === 'inbox'
+              ? 'bg-[#0F5E48] text-white shadow-sm'
+              : 'text-[#2D4039] hover:text-[#0F3D32] hover:bg-[#EFE9DC]'
           }`}
         >
           {t.tabInbox} ({inquiries.length})
@@ -223,30 +242,30 @@ export function ConnectionsView({
         <button
           type="button"
           onClick={() => setActiveTab('saved')}
-          className={`px-4 py-2 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
-            activeTab === 'saved'
-              ? 'bg-white text-zinc-900 shadow-sm'
-              : 'text-zinc-600 hover:text-zinc-900'
+          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+            effectiveTab === 'saved'
+              ? 'bg-[#9D174D] text-white shadow-sm'
+              : 'text-[#2D4039] hover:text-[#591432] hover:bg-[#EFE9DC]'
           }`}
         >
           {t.tabSaved} ({savedListings.length})
         </button>
       </div>
 
-      {!user && activeTab !== 'saved' ? (
-        <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center space-y-4">
-          <p className="text-sm text-zinc-600">{t.signInToOrder}</p>
+      {!user && effectiveTab !== 'saved' ? (
+        <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center space-y-4">
+          <p className="text-sm text-[#394D46]">{t.signInToConnect}</p>
           <button
             type="button"
             onClick={onSignIn}
-            className="px-5 py-2.5 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-sm font-medium"
+            className="px-5 py-2.5 rounded-lg bg-[#0F4C3A] hover:bg-[#0B3B2D] text-white text-sm font-semibold"
           >
             {t.signInGoogle}
           </button>
         </div>
-      ) : activeTab === 'orders' ? (
+      ) : effectiveTab === 'orders' && isAdmin ? (
         orders.length === 0 ? (
-          <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center space-y-4">
+          <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center space-y-4">
             <p className="text-sm text-zinc-600">{t.emptyOrders}</p>
             <button
               type="button"
@@ -260,12 +279,12 @@ export function ConnectionsView({
           <div className="space-y-8">
             {incomingOrders.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-base font-semibold text-zinc-900">{t.incomingOrdersTitle}</h2>
+                <h2 className="text-base font-semibold text-[#102620]">{t.incomingOrdersTitle}</h2>
                 <div className="space-y-4">
                   {incomingOrders.map((ord) => (
                     <div
                       key={ord.id}
-                      className="bg-white border border-zinc-200 rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                      className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                     >
                       <div className="flex items-start gap-4 min-w-0">
                         <div className="w-20 h-16 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
@@ -284,7 +303,7 @@ export function ConnectionsView({
                             · {getOrderStatusLabel(ord.status, lang)} ·{' '}
                             {getPaymentMethodLabel(ord.paymentMethod, lang)}
                           </div>
-                          <h3 className="text-sm font-semibold text-zinc-900 truncate">
+                          <h3 className="text-sm font-semibold text-[#102620] truncate">
                             {ord.listingTitle}
                           </h3>
                           <p className="text-xs text-zinc-600">
@@ -297,7 +316,7 @@ export function ConnectionsView({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 shrink-0">
-                        <span className="font-mono text-sm font-semibold text-emerald-900 tabular-nums mr-2">
+                        <span className="font-mono text-sm font-semibold text-[#9A3412] tabular-nums mr-2">
                           {formatPrice(ord.totalAmount, ord.currency, 'total', lang)} (×
                           {ord.quantity})
                         </span>
@@ -381,12 +400,12 @@ export function ConnectionsView({
 
             {placedOrders.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-base font-semibold text-zinc-900">{t.placedOrdersTitle}</h2>
+                <h2 className="text-base font-semibold text-[#102620]">{t.placedOrdersTitle}</h2>
                 <div className="space-y-4">
                   {placedOrders.map((ord) => (
                     <div
                       key={ord.id}
-                      className="bg-white border border-zinc-200 rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                      className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                     >
                       <div className="flex items-start gap-4 min-w-0">
                         <div className="w-20 h-16 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
@@ -416,7 +435,7 @@ export function ConnectionsView({
                             </span>{' '}
                             · {getPaymentMethodLabel(ord.paymentMethod, lang)}
                           </div>
-                          <h3 className="text-sm font-semibold text-zinc-900 truncate">
+                          <h3 className="text-sm font-semibold text-[#102620] truncate">
                             {ord.listingTitle}
                           </h3>
                           <p className="text-xs text-zinc-600">
@@ -426,7 +445,7 @@ export function ConnectionsView({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 shrink-0">
-                        <span className="font-mono text-sm font-semibold text-emerald-900 tabular-nums">
+                        <span className="font-mono text-sm font-semibold text-[#9A3412] tabular-nums">
                           {formatPrice(ord.totalAmount, ord.currency, 'total', lang)} (×
                           {ord.quantity})
                         </span>
@@ -474,14 +493,14 @@ export function ConnectionsView({
 
             {otherAdminOrders.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-base font-semibold text-zinc-900">
+                <h2 className="text-base font-semibold text-[#102620]">
                   {t.allOrdersTitle} ({otherAdminOrders.length})
                 </h2>
                 <div className="space-y-4">
                   {otherAdminOrders.map((ord) => (
                     <div
                       key={ord.id}
-                      className="bg-white border border-zinc-200 rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                      className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                     >
                       <div className="flex items-start gap-4 min-w-0">
                         <div className="w-20 h-16 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
@@ -500,7 +519,7 @@ export function ConnectionsView({
                             · {getOrderStatusLabel(ord.status, lang)} ·{' '}
                             {getPaymentMethodLabel(ord.paymentMethod, lang)}
                           </div>
-                          <h3 className="text-sm font-semibold text-zinc-900 truncate">
+                          <h3 className="text-sm font-semibold text-[#102620] truncate">
                             {ord.listingTitle}
                           </h3>
                           <p className="text-xs text-zinc-600">
@@ -513,7 +532,7 @@ export function ConnectionsView({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 shrink-0">
-                        <span className="font-mono text-sm font-semibold text-emerald-900 tabular-nums mr-2">
+                        <span className="font-mono text-sm font-semibold text-[#9A3412] tabular-nums mr-2">
                           {formatPrice(ord.totalAmount, ord.currency, 'total', lang)} (×
                           {ord.quantity})
                         </span>
@@ -578,12 +597,12 @@ export function ConnectionsView({
             )}
           </div>
         )
-      ) : activeTab === 'notifications' ? (
+      ) : effectiveTab === 'notifications' && isAdmin ? (
         <div className="space-y-5">
-          <div className="bg-white border border-zinc-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <Bell className="w-4 h-4 text-emerald-800 shrink-0" />
-              <span className="text-sm font-semibold text-zinc-900">
+              <span className="text-sm font-semibold text-[#102620]">
                 {t.tabNotifications}
                 {unreadNotifications.length > 0 && (
                   <span className="ml-2 text-xs font-normal text-emerald-800 tabular-nums">
@@ -643,7 +662,7 @@ export function ConnectionsView({
           </div>
 
           {notifications.length === 0 ? (
-            <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center space-y-4">
+            <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center space-y-4">
               <p className="text-sm text-zinc-600">{t.notifEmpty}</p>
             </div>
           ) : (
@@ -679,12 +698,12 @@ export function ConnectionsView({
                         </>
                       )}
                     </div>
-                    <h3 className="text-sm font-semibold text-zinc-900 truncate">
+                    <h3 className="text-sm font-semibold text-[#102620] truncate">
                       {notif.listingTitle}
                     </h3>
                     <p className="text-xs text-zinc-600">
                       {notif.actorName} ·{' '}
-                      <span className="font-mono font-semibold text-emerald-900 tabular-nums">
+                      <span className="font-mono font-semibold text-[#9A3412] tabular-nums">
                         {formatPrice(notif.amount, notif.currency, 'total', lang)}
                       </span>
                     </p>
@@ -745,9 +764,9 @@ export function ConnectionsView({
             </div>
           )}
         </div>
-      ) : activeTab === 'saved' ? (
+      ) : effectiveTab === 'saved' ? (
         savedListings.length === 0 ? (
-          <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center text-sm text-zinc-500">
+          <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center text-sm text-zinc-500">
             {t.emptySaved}
           </div>
         ) : (
@@ -764,9 +783,9 @@ export function ConnectionsView({
             ))}
           </div>
         )
-      ) : activeTab === 'listings' ? (
+      ) : effectiveTab === 'listings' ? (
         myListings.length === 0 && otherPlatformListings.length === 0 ? (
-          <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center space-y-4">
+          <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center space-y-4">
             <p className="text-sm text-zinc-600">{t.emptyMyListings}</p>
             <button
               type="button"
@@ -783,7 +802,7 @@ export function ConnectionsView({
                 {myListings.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="w-24 h-18 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
@@ -800,8 +819,8 @@ export function ConnectionsView({
                           {getTransactionLabel(item.transactionType, lang)} ·{' '}
                           {getStatusLabel(item.status, lang)}
                         </div>
-                        <h3 className="text-sm font-semibold text-zinc-900 truncate">{item.title}</h3>
-                        <div className="font-mono text-sm font-semibold text-emerald-900 tabular-nums">
+                        <h3 className="text-sm font-semibold text-[#102620] truncate">{item.title}</h3>
+                        <div className="font-mono text-sm font-semibold text-[#9A3412] tabular-nums">
                           {formatPrice(item.price, item.currency, item.pricePeriod, lang)}
                         </div>
                       </div>
@@ -897,14 +916,14 @@ export function ConnectionsView({
 
             {otherPlatformListings.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-base font-semibold text-zinc-900">
+                <h2 className="text-base font-semibold text-[#102620]">
                   {t.allListingsTitle} ({otherPlatformListings.length})
                 </h2>
                 <div className="space-y-4">
                   {otherPlatformListings.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-24 h-18 rounded-lg overflow-hidden bg-zinc-100 shrink-0">
@@ -921,8 +940,8 @@ export function ConnectionsView({
                             {getTransactionLabel(item.transactionType, lang)} ·{' '}
                             {getStatusLabel(item.status, lang)} · {item.sellerName}
                           </div>
-                          <h3 className="text-sm font-semibold text-zinc-900 truncate">{item.title}</h3>
-                          <div className="font-mono text-sm font-semibold text-emerald-900 tabular-nums">
+                          <h3 className="text-sm font-semibold text-[#102620] truncate">{item.title}</h3>
+                          <div className="font-mono text-sm font-semibold text-[#9A3412] tabular-nums">
                             {formatPrice(item.price, item.currency, item.pricePeriod, lang)}
                           </div>
                         </div>
@@ -975,19 +994,19 @@ export function ConnectionsView({
           </div>
         )
       ) : inquiries.length === 0 ? (
-        <div className="bg-white border border-zinc-200 rounded-xl p-10 text-center text-sm text-zinc-500">
+        <div className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-10 text-center text-sm text-zinc-500">
           {t.emptyInbox}
         </div>
       ) : (
         <div className="space-y-8">
           {receivedInquiries.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-base font-semibold text-zinc-900">{t.receivedInquiries}</h2>
+              <h2 className="text-base font-semibold text-[#102620]">{t.receivedInquiries}</h2>
               <div className="space-y-4">
                 {receivedInquiries.map((inq) => (
                   <div
                     key={inq.id}
-                    className="bg-white border border-zinc-200 rounded-xl p-5 space-y-3"
+                    className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 space-y-3"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
                       <span>
@@ -995,7 +1014,7 @@ export function ConnectionsView({
                       </span>
                       <span className="font-medium text-zinc-700 capitalize">{inq.status}</span>
                     </div>
-                    <h3 className="text-sm font-semibold text-zinc-900">{inq.listingTitle}</h3>
+                    <h3 className="text-sm font-semibold text-[#102620]">{inq.listingTitle}</h3>
                     <p className="text-sm text-zinc-700">{inq.message}</p>
 
                     {inq.sellerReply && (
@@ -1049,12 +1068,12 @@ export function ConnectionsView({
 
           {sentInquiries.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-base font-semibold text-zinc-900">{t.sentInquiries}</h2>
+              <h2 className="text-base font-semibold text-[#102620]">{t.sentInquiries}</h2>
               <div className="space-y-4">
                 {sentInquiries.map((inq) => (
                   <div
                     key={inq.id}
-                    className="bg-white border border-zinc-200 rounded-xl p-5 space-y-2.5"
+                    className="bg-[#FFFDF8] border border-[#D8D0C1] rounded-xl p-5 space-y-2.5"
                   >
                     <div className="flex items-center justify-between gap-2 text-xs text-zinc-500">
                       <span>
@@ -1062,10 +1081,10 @@ export function ConnectionsView({
                       </span>
                       <span className="font-medium text-zinc-700 capitalize">{inq.status}</span>
                     </div>
-                    <h3 className="text-sm font-semibold text-zinc-900">{inq.listingTitle}</h3>
+                    <h3 className="text-sm font-semibold text-[#102620]">{inq.listingTitle}</h3>
                     <p className="text-sm text-zinc-700">{inq.message}</p>
                     {inq.sellerReply && (
-                      <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">
+                      <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-[#9A3412]">
                         {inq.sellerReply}
                       </div>
                     )}
