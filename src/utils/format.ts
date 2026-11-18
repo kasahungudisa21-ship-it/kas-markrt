@@ -270,10 +270,31 @@ export function matchesVehicleYear(listing: Listing, yearQuery: string): boolean
 export function formatFirestoreUserError(err: unknown, lang: Language): string {
   const raw = err instanceof Error ? err.message : String(err || '');
   let message = raw;
+  let parsedInfo: {
+    error?: string;
+    operationType?: string;
+    path?: string | null;
+    authInfo?: {
+      userId?: string | null;
+      email?: string | null;
+      emailVerified?: boolean | null;
+    };
+  } | null = null;
+
   try {
-    const parsed = JSON.parse(raw) as { error?: string };
+    const parsed = JSON.parse(raw) as {
+      error?: string;
+      operationType?: string;
+      path?: string | null;
+      authInfo?: {
+        userId?: string | null;
+        email?: string | null;
+        emailVerified?: boolean | null;
+      };
+    };
     if (parsed && typeof parsed.error === 'string') {
       message = parsed.error;
+      parsedInfo = parsed;
     }
   } catch {
     // Not JSON
@@ -283,20 +304,35 @@ export function formatFirestoreUserError(err: unknown, lang: Language): string {
   if (
     lower.includes('cloud firestore api has not been used') ||
     lower.includes('service_disabled') ||
-    lower.includes('database') && lower.includes('does not exist')
+    (lower.includes('database') && lower.includes('does not exist'))
   ) {
     return lang === 'am'
-      ? 'የ Firebase Firestore ዳታቤዝ በፕሮጀክቱ ውስጥ አልተከፈተም። Firebase Console -> Firestore Database -> Create database በመክፈት ያብሩት።'
-      : 'Firestore Database is not created/enabled in this Firebase project yet. Open Firebase Console -> Firestore Database -> Create database.';
+      ? 'የ Firebase Firestore ዳታቤዝ በፕሮጀክቱ ውስጥ አልተከፈተም። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።'
+      : 'Firestore Database is not created/enabled in this Firebase project yet.';
   }
 
   if (
     lower.includes('permission-denied') ||
     lower.includes('missing or insufficient permissions')
   ) {
+    const uid = parsedInfo?.authInfo?.userId;
+    const emailVerified = parsedInfo?.authInfo?.emailVerified;
+
+    if (!uid) {
+      return lang === 'am'
+        ? 'ይህን ተግባር ለመፈጸም በቅድሚያ በGoogle ይግቡ እና እንደገና ይሞክሩ።'
+        : 'Please sign in with Google first, then try again.';
+    }
+
+    if (emailVerified === false) {
+      return lang === 'am'
+        ? 'የገቡበት የGoogle ኢሜል የተረጋገጠ (Verified) አይደለም። እባክዎ በተረጋገጠ የGmail መለያ ይግቡ።'
+        : 'Your Google account email is not verified. Please sign in with a verified Gmail account.';
+    }
+
     return lang === 'am'
-      ? 'የዳታቤዝ ፍቃድ ተከልክሏል። በGoogle መግባትዎን እና Firebase Console -> Firestore Database -> Rules ውስጥ የfirestore.rules ህግ መታተሙን (Publish) ያረጋግጡ።'
-      : 'Database permission denied. Ensure you are signed in with Google and that firestore.rules is published in Firebase Console -> Firestore Database -> Rules.';
+      ? 'የዳታቤዝ ፍቃድ ተከልክሏል። ከመለያዎ ወጥተው (Sign out) ገጹን ያድሱና በGoogle እንደገና ይግቡ። ችግሩ ከቀጠለ የመተግበሪያው ባለቤት የFirestore ህጎችን (Rules) ማተሙን ያረጋግጡ።'
+      : 'Database permission denied. Please sign out, refresh the page, and sign in with Google again. If the issue persists, ensure the latest Firestore Rules are published.';
   }
 
   if (lower.includes('offline') || lower.includes('network') || lower.includes('unavailable')) {

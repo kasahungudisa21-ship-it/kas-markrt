@@ -12,6 +12,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocFromServer,
   getDocs,
   getFirestore,
@@ -157,11 +158,7 @@ async function testConnection() {
 testConnection();
 
 export async function consumeRedirectSignInResult(): Promise<void> {
-  try {
-    await getRedirectResult(auth);
-  } catch (error) {
-    console.warn('Redirect sign-in check:', error);
-  }
+  await getRedirectResult(auth);
 }
 
 export async function signInWithGoogle() {
@@ -203,22 +200,33 @@ export function generateValidId(prefix: string): string {
 }
 
 export async function syncUserProfile(user: User): Promise<void> {
-  if (!user.uid || !user.email) return;
+  if (!user.uid || !user.email || !user.emailVerified) return;
   const uid = sanitizeId(user.uid);
   const publicPath = `users/${uid}`;
   const privatePath = `users/${uid}/private/info`;
-  const displayName = (user.displayName || user.email.split('@')[0] || 'Seller').trim().slice(0, 80);
+  const displayName =
+    (user.displayName || user.email.split('@')[0] || 'Seller').trim().slice(0, 80) || 'Seller';
 
   try {
     const publicRef = doc(db, 'users', uid);
-    const snap = await getDocFromServer(publicRef).catch(() => null);
+    let snap = null;
+    try {
+      snap = await getDocFromServer(publicRef);
+    } catch {
+      try {
+        snap = await getDoc(publicRef);
+      } catch {
+        snap = null;
+      }
+    }
+
     if (snap && snap.exists()) {
       await updateDoc(publicRef, {
         displayName,
         photoUrl: (user.photoURL || '').slice(0, 500),
         updatedAt: serverTimestamp(),
       });
-    } else {
+    } else if (snap && !snap.exists()) {
       await setDoc(publicRef, {
         uid,
         displayName,
@@ -238,7 +246,7 @@ export async function syncUserProfile(user: User): Promise<void> {
       privateRef,
       {
         uid,
-        email: user.email.slice(0, 150),
+        email: user.email.trim().slice(0, 150) || 'user@example.com',
         updatedAt: serverTimestamp(),
       },
       { merge: true }
@@ -275,8 +283,9 @@ function buildPrivateContactPayload(
   }
 ) {
   const uid = sanitizeId(user.uid);
-  const userName = (user.displayName || user.email?.split('@')[0] || 'User').trim().slice(0, 80);
-  const userEmail = (user.email || 'user@example.com').trim().slice(0, 150);
+  const userName =
+    (user.displayName || user.email?.split('@')[0] || 'User').trim().slice(0, 80) || 'User';
+  const userEmail = (user.email || 'user@example.com').trim().slice(0, 150) || 'user@example.com';
   return {
     userId: uid,
     userName,
@@ -640,7 +649,8 @@ export async function createListing(user: User, input: ListingInput): Promise<st
   const cleanUid = sanitizeId(user.uid);
   const path = `listings/${id}`;
   const cleanSpecs = buildCleanSpecs(input.specs);
-  const sellerName = (user.displayName || user.email?.split('@')[0] || 'Seller').trim().slice(0, 80);
+  const sellerName =
+    (user.displayName || user.email?.split('@')[0] || 'Seller').trim().slice(0, 80) || 'Seller';
   const cleanTitle = input.title.trim().slice(0, 120);
   const cleanNeighborhood = input.neighborhood.trim().slice(0, 80);
   const cleanPhone = (input.sellerPhone || '').trim().slice(0, 30);
@@ -1203,9 +1213,11 @@ export async function placeOrder(
   const unitPrice = Number(input.listing.price);
   const totalAmount = unitPrice * qty;
   const cleanPhone = input.buyerPhone.trim().slice(0, 30);
-  const cleanTitle = input.listing.title.trim().slice(0, 120);
+  const cleanTitle = input.listing.title.trim().slice(0, 120) || 'Listing';
   const cleanListingId = sanitizeId(input.listing.id);
   const cleanSellerId = sanitizeId(input.listing.ownerId);
+  const cleanSellerName = input.listing.sellerName.trim().slice(0, 80) || 'Seller';
+  const cleanListingImage = input.listing.imageUrl.trim().slice(0, 180000) || 'cover';
   const cleanBuyerName = input.buyerName.trim().slice(0, 80) || 'Buyer';
 
   if (cleanPhone.length < 6) {
@@ -1221,9 +1233,9 @@ export async function placeOrder(
       listingTitle: cleanTitle,
       listingCategory: input.listing.category,
       transactionType: input.listing.transactionType,
-      listingImage: input.listing.imageUrl.trim().slice(0, 180000),
+      listingImage: cleanListingImage,
       sellerId: cleanSellerId,
-      sellerName: input.listing.sellerName.trim().slice(0, 80),
+      sellerName: cleanSellerName,
       buyerId: cleanUid,
       buyerName: cleanBuyerName,
       buyerPhone: 'Admin-only',
@@ -1449,7 +1461,8 @@ export async function createBuyerRequest(
   const contactId = generateValidId('cnt');
   const cleanUid = sanitizeId(user.uid);
   const path = `buyerRequests/${id}`;
-  const buyerName = (user.displayName || user.email?.split('@')[0] || 'Buyer').trim().slice(0, 80);
+  const buyerName =
+    (user.displayName || user.email?.split('@')[0] || 'Buyer').trim().slice(0, 80) || 'Buyer';
   const cleanTitle = input.title.trim().slice(0, 120);
   const cleanNeighborhood = input.preferredNeighborhood.trim().slice(0, 80);
   const cleanPhone = input.buyerPhone.trim().slice(0, 30);

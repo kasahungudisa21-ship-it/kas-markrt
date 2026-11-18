@@ -31,7 +31,7 @@ import {
   translations,
 } from '../i18n';
 import { Language, Listing, ListingPhoto, PaymentMethod } from '../types';
-import { formatPrice } from '../utils/format';
+import { formatFirestoreUserError, formatPrice } from '../utils/format';
 import { ResilientImage } from './ResilientImage';
 
 interface ListingDetailModalProps {
@@ -291,7 +291,7 @@ export function ListingDetailModal({
       setOrderNotes('');
       setAgreedOrderLegal(false);
     } catch (err) {
-      setOrderError(err instanceof Error ? err.message : 'Unable to place order.');
+      setOrderError(formatFirestoreUserError(err, lang));
     } finally {
       setOrderSubmitting(false);
     }
@@ -332,7 +332,7 @@ export function ListingDetailModal({
       setMessage('');
       setAgreedMsgLegal(false);
     } catch (err) {
-      setMsgError(err instanceof Error ? err.message : 'Unable to send message.');
+      setMsgError(formatFirestoreUserError(err, lang));
     } finally {
       setMsgSubmitting(false);
     }

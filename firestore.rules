@@ -439,11 +439,16 @@ service cloud.firestore {
           && photoId in ['slot_0', 'slot_1', 'slot_2', 'slot_3', 'slot_4', 'slot_5']
           && isValidListingPhoto(incoming())
           && incoming().listingId == listingId
-          && incoming().ownerId == request.auth.uid
           && incoming().createdAt == request.time
           && incoming().updatedAt == request.time
           && existsAfter(/databases/$(database)/documents/listings/$(listingId))
-          && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid;
+          && (
+            isAdmin()
+            || (
+              incoming().ownerId == request.auth.uid
+              && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+          );
         allow update: if isVerified() && isValidId(listingId) && isValidId(photoId)
           && isValidListingPhoto(incoming())
           && (isAdmin() || (
@@ -473,11 +478,16 @@ service cloud.firestore {
           && chunkId.matches('^chunk_([0-9]|1[0-5])$')
           && isValidListingVideoChunk(incoming())
           && incoming().listingId == listingId
-          && incoming().ownerId == request.auth.uid
           && incoming().createdAt == request.time
           && incoming().updatedAt == request.time
           && existsAfter(/databases/$(database)/documents/listings/$(listingId))
-          && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid;
+          && (
+            isAdmin()
+            || (
+              incoming().ownerId == request.auth.uid
+              && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+          );
         allow update: if isVerified() && isValidId(listingId) && isValidId(chunkId)
           && isValidListingVideoChunk(incoming())
           && (isAdmin() || (

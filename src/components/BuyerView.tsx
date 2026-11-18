@@ -54,6 +54,7 @@ import {
   TransactionType,
 } from '../types';
 import {
+  formatFirestoreUserError,
   formatPrice,
   formatSpecsLine,
   matchesGoodsCondition,
@@ -372,7 +373,7 @@ export function BuyerView({
       setAgreedWantedLegal(false);
       setPostedSuccess(true);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Unable to post buyer request.');
+      setFormError(formatFirestoreUserError(err, lang));
     } finally {
       setSubmitting(false);
     }

@@ -135,8 +135,35 @@ export default function App() {
 
   const t = translations[lang];
 
+  const formatGoogleAuthError = (err: unknown): string | null => {
+    const code = (err as { code?: string })?.code || '';
+    if (
+      !code &&
+      !(err instanceof Error && err.message)
+    ) {
+      return null;
+    }
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      return null;
+    }
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    const currentLang = langRef.current;
+    if (code === 'auth/unauthorized-domain') {
+      return currentLang === 'am'
+        ? `ይህ ዶሜይን (${host}) በ Firebase Authorized Domains ውስጥ አልተመዘገበም። Firebase Console -> Authentication -> Settings -> Authorized domains ውስጥ "${host}" ይጨምሩ።`
+        : `This domain (${host}) is not authorized in Firebase Auth. Add "${host}" under Firebase Console -> Authentication -> Settings -> Authorized domains.`;
+    }
+    const msg = err instanceof Error ? err.message : String(err || '');
+    return currentLang === 'am'
+      ? `መግባት አልተቻለም (${code || msg})። በስልክ Chrome ወይም Safari ውስጥ መክፈትዎን ያረጋግጡ።`
+      : `Unable to sign in (${code || msg}). Try opening in Chrome or Safari on your phone.`;
+  };
+
   useEffect(() => {
-    consumeRedirectSignInResult().catch(() => {});
+    consumeRedirectSignInResult().catch((err) => {
+      const formatted = formatGoogleAuthError(err);
+      if (formatted) setAuthError(formatted);
+    });
     const unsub = onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
       setAuthReady(true);
@@ -512,7 +539,11 @@ export default function App() {
       });
       return;
     }
-    await toggleSavedListing(user.uid, listing.id, currentlySaved);
+    try {
+      await toggleSavedListing(user.uid, listing.id, currentlySaved);
+    } catch (err) {
+      setDataError(formatFirestoreUserError(err, lang));
+    }
   };
 
   const handleDeleteListing = async (listing: Listing) => {
@@ -528,24 +559,9 @@ export default function App() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      const code = (err as { code?: string })?.code || '';
-      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        return;
-      }
-      const host = typeof window !== 'undefined' ? window.location.hostname : '';
-      if (code === 'auth/unauthorized-domain') {
-        setAuthError(
-          lang === 'am'
-            ? `ይህ ዶሜይን (${host}) በ Firebase Authorized Domains ውስጥ አልተመዘገበም። Firebase Console -> Authentication -> Settings -> Authorized domains ውስጥ "${host}" ይጨምሩ።`
-            : `This domain (${host}) is not authorized in Firebase Auth. Add "${host}" under Firebase Console -> Authentication -> Settings -> Authorized domains.`
-        );
-      } else {
-        const msg = err instanceof Error ? err.message : String(err || '');
-        setAuthError(
-          lang === 'am'
-            ? `መግባት አልተቻለም (${code || msg})። በስልክ Chrome ወይም Safari ውስጥ መክፈትዎን ያረጋግጡ።`
-            : `Unable to sign in (${code || msg}). Try opening in Chrome or Safari on your phone.`
-        );
+      const formatted = formatGoogleAuthError(err);
+      if (formatted) {
+        setAuthError(formatted);
       }
     }
   };
