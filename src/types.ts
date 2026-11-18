@@ -26,15 +26,30 @@ export type RoomClass = '1_class' | '2_class' | '3_plus';
 
 export type TenantPreference = 'late' | 'bale_tedar' | 'any';
 
+export type VehicleType = 'suv' | 'sedan' | 'compact' | 'pickup' | 'van' | 'truck';
+
+export type GoodsType =
+  | 'electronics'
+  | 'phones_tech'
+  | 'furniture'
+  | 'appliances'
+  | 'machinery_tools'
+  | 'fashion_home'
+  | 'other';
+
 export interface ListingSpecs {
   bedrooms?: number;
   bathrooms?: number;
   areaSqm?: number;
   titleDeed?: string;
+  vehicleType?: string;
+  vehicleModel?: string;
   vehicleYear?: number;
   mileageKm?: number;
   transmission?: string;
   fuelType?: string;
+  goodsType?: string;
+  goodsModel?: string;
   itemCondition?: string;
   roomClass?: RoomClass;
   tenantPreference?: TenantPreference;

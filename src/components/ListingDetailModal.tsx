@@ -21,10 +21,12 @@ import {
 import { fetchListingPhotos, fetchListingVideo, placeOrder, sendListingInquiry } from '../firebase';
 import {
   getCategoryLabel,
+  getGoodsTypeLabel,
   getRoomClassLabel,
   getStatusLabel,
   getTenantPreferenceLabel,
   getTransactionLabel,
+  getVehicleTypeLabel,
   translations,
 } from '../i18n';
 import { Language, Listing, ListingPhoto, PaymentMethod } from '../types';
@@ -202,6 +204,15 @@ export function ListingDetailModal({
     });
   }
   if (s.titleDeed) specRows.push({ label: t.titleDeed, value: s.titleDeed });
+  if (s.vehicleType) {
+    specRows.push({
+      label: t.vehicleTypeLabel,
+      value: getVehicleTypeLabel(s.vehicleType, lang),
+    });
+  }
+  if (s.vehicleModel) {
+    specRows.push({ label: t.vehicleModelLabel, value: s.vehicleModel });
+  }
   if (typeof s.vehicleYear === 'number') {
     specRows.push({ label: t.vehicleYear, value: String(s.vehicleYear) });
   }
@@ -213,6 +224,15 @@ export function ListingDetailModal({
   }
   if (s.transmission) specRows.push({ label: t.transmission, value: s.transmission });
   if (s.fuelType) specRows.push({ label: t.fuelType, value: s.fuelType });
+  if (s.goodsType) {
+    specRows.push({
+      label: t.goodsTypeLabel,
+      value: getGoodsTypeLabel(s.goodsType, lang),
+    });
+  }
+  if (s.goodsModel) {
+    specRows.push({ label: t.goodsModelLabel, value: s.goodsModel });
+  }
   if (s.itemCondition) specRows.push({ label: t.condition, value: s.itemCondition });
 
   const handleOrderSubmit = async (e: React.FormEvent) => {

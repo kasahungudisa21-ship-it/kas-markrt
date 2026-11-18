@@ -1,4 +1,10 @@
-import { getPeriodLabel, getRoomClassLabel, getTenantPreferenceLabel } from '../i18n';
+import {
+  getGoodsTypeLabel,
+  getPeriodLabel,
+  getRoomClassLabel,
+  getTenantPreferenceLabel,
+  getVehicleTypeLabel,
+} from '../i18n';
 import { CurrencyCode, Language, Listing, PricePeriod } from '../types';
 
 export function formatPrice(
@@ -49,6 +55,12 @@ export function formatSpecsLine(listing: Listing, lang: Language): string {
       parts.push(s.titleDeed);
     }
   } else if (listing.category === 'vehicle') {
+    if (s.vehicleType) {
+      parts.push(getVehicleTypeLabel(s.vehicleType, lang));
+    }
+    if (s.vehicleModel) {
+      parts.push(s.vehicleModel);
+    }
     if (typeof s.vehicleYear === 'number') {
       parts.push(String(s.vehicleYear));
     }
@@ -62,6 +74,12 @@ export function formatSpecsLine(listing: Listing, lang: Language): string {
       parts.push(s.transmission);
     }
   } else if (listing.category === 'goods') {
+    if (s.goodsType) {
+      parts.push(getGoodsTypeLabel(s.goodsType, lang));
+    }
+    if (s.goodsModel) {
+      parts.push(s.goodsModel);
+    }
     if (s.itemCondition) {
       parts.push(s.itemCondition);
     }
@@ -69,6 +87,67 @@ export function formatSpecsLine(listing: Listing, lang: Language): string {
   }
 
   return parts.join(' · ') || `${listing.neighborhood} · ${listing.city}`;
+}
+
+const VEHICLE_TYPE_KEYWORDS: Record<string, string[]> = {
+  suv: ['suv', '4x4', 'rav4', 'tucson', 'sportage', 'land cruiser', 'prado', 'song', 'cross', 'highlander'],
+  sedan: ['sedan', 'corolla', 'elantra', 'dzire', 'camry', 'accord', 'civic'],
+  compact: ['compact', 'hatchback', 'vitz', 'yaris', 'swift', 'seagull', 'picanto', 'alto'],
+  pickup: ['pickup', 'hilux', 'ranger', 'navara', 'd-max', 'tacoma'],
+  van: ['van', 'minibus', 'hiace', 'minivan', 'dolphin'],
+  truck: ['truck', 'isuzu', 'npr', 'sino', 'cargo', 'lorry'],
+};
+
+const GOODS_TYPE_KEYWORDS: Record<string, string[]> = {
+  electronics: ['tv', 'television', 'speaker', 'audio', 'camera', 'projector', 'electronics', 'playstation'],
+  phones_tech: ['phone', 'iphone', 'samsung', 'galaxy', 'laptop', 'macbook', 'computer', 'pc', 'tablet', 'ipad', 'hp', 'dell'],
+  furniture: ['sofa', 'chair', 'table', 'bed', 'desk', 'cabinet', 'wardrobe', 'furniture', 'walnut', 'couch'],
+  appliances: ['fridge', 'refrigerator', 'washer', 'washing', 'microwave', 'espresso', 'oven', 'stove', 'blender', 'appliance', 'hisense', 'lg', 'bosch'],
+  machinery_tools: ['generator', 'drill', 'compressor', 'machine', 'machinery', 'tool', 'pump', 'welding'],
+  fashion_home: ['watch', 'shoes', 'jacket', 'bag', 'dress', 'carpet', 'curtain', 'decor', 'lamp', 'perfume'],
+};
+
+export function matchesVehicleType(listing: Listing, typeFilter: string): boolean {
+  if (!typeFilter || typeFilter === 'all') return true;
+  if (listing.category !== 'vehicle') return false;
+  const specType = (listing.specs?.vehicleType || '').trim().toLowerCase();
+  if (specType) {
+    return specType === typeFilter.toLowerCase();
+  }
+  const hay = `${listing.title} ${listing.description} ${listing.specs?.vehicleModel || ''}`.toLowerCase();
+  const keywords = VEHICLE_TYPE_KEYWORDS[typeFilter.toLowerCase()] || [typeFilter.toLowerCase()];
+  return keywords.some((kw) => hay.includes(kw));
+}
+
+export function matchesGoodsType(listing: Listing, typeFilter: string): boolean {
+  if (!typeFilter || typeFilter === 'all') return true;
+  if (listing.category !== 'goods') return false;
+  const specType = (listing.specs?.goodsType || '').trim().toLowerCase();
+  if (specType) {
+    return specType === typeFilter.toLowerCase();
+  }
+  const hay = `${listing.title} ${listing.description} ${listing.specs?.goodsModel || ''}`.toLowerCase();
+  if (typeFilter === 'other') {
+    return true;
+  }
+  const keywords = GOODS_TYPE_KEYWORDS[typeFilter.toLowerCase()] || [typeFilter.toLowerCase()];
+  return keywords.some((kw) => hay.includes(kw));
+}
+
+export function matchesListingModel(
+  listing: Listing,
+  category: 'vehicle' | 'goods',
+  modelQuery: string
+): boolean {
+  const q = modelQuery.trim().toLowerCase();
+  if (!q) return true;
+  if (listing.category !== category) return false;
+  const modelField =
+    category === 'vehicle'
+      ? (listing.specs?.vehicleModel || '').toLowerCase()
+      : (listing.specs?.goodsModel || '').toLowerCase();
+  const hay = `${modelField} ${listing.title} ${listing.description}`.toLowerCase();
+  return hay.includes(q);
 }
 
 export function formatFirestoreUserError(err: unknown, lang: Language): string {

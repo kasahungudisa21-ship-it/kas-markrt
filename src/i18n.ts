@@ -1,4 +1,5 @@
 import {
+  GoodsType,
   Language,
   ListingCategory,
   ListingStatus,
@@ -9,6 +10,7 @@ import {
   RoomClass,
   TenantPreference,
   TransactionType,
+  VehicleType,
 } from './types';
 
 interface Dictionary {
@@ -317,6 +319,30 @@ interface Dictionary {
   videoCameraError: string;
   videoTooLargeError: string;
   videoInvalidFileError: string;
+  vehicleTypeLabel: string;
+  vehicleModelLabel: string;
+  goodsTypeLabel: string;
+  goodsModelLabel: string;
+  allVehicleTypes: string;
+  allGoodsTypes: string;
+  allModels: string;
+  vehicleModelPlaceholder: string;
+  goodsModelPlaceholder: string;
+  vehicleNavHeading: string;
+  goodsNavHeading: string;
+  vehicleTypeSuv: string;
+  vehicleTypeSedan: string;
+  vehicleTypeCompact: string;
+  vehicleTypePickup: string;
+  vehicleTypeVan: string;
+  vehicleTypeTruck: string;
+  goodsTypeElectronics: string;
+  goodsTypePhonesTech: string;
+  goodsTypeFurniture: string;
+  goodsTypeAppliances: string;
+  goodsTypeMachineryTools: string;
+  goodsTypeFashionHome: string;
+  goodsTypeOther: string;
 }
 
 const en: Dictionary = {
@@ -628,6 +654,30 @@ const en: Dictionary = {
   videoCameraError: 'Live video camera is unavailable in this view. Use your device camera or upload a video file.',
   videoTooLargeError: 'Video file is too large (max ~30 seconds / 2.2 MB after compression). Please record or choose a shorter clip.',
   videoInvalidFileError: 'Unable to read that video file. Please select an MP4, WebM, or MOV video.',
+  vehicleTypeLabel: 'Vehicle Type',
+  vehicleModelLabel: 'Model',
+  goodsTypeLabel: 'Goods Type',
+  goodsModelLabel: 'Model / Brand',
+  allVehicleTypes: 'All Vehicle Types',
+  allGoodsTypes: 'All Goods Types',
+  allModels: 'All Models',
+  vehicleModelPlaceholder: 'Type or choose model (e.g. Toyota RAV4, Vitz, Hilux...)',
+  goodsModelPlaceholder: 'Type or choose model (e.g. iPhone 15, LG TV, Samsung...)',
+  vehicleNavHeading: 'Vehicle Type & Model Navigation',
+  goodsNavHeading: 'Goods Type & Model Navigation',
+  vehicleTypeSuv: 'SUV / 4x4',
+  vehicleTypeSedan: 'Sedan',
+  vehicleTypeCompact: 'Compact / Hatchback',
+  vehicleTypePickup: 'Pickup',
+  vehicleTypeVan: 'Van / Minibus',
+  vehicleTypeTruck: 'Truck / Commercial',
+  goodsTypeElectronics: 'Electronics & TV',
+  goodsTypePhonesTech: 'Phones & Computers',
+  goodsTypeFurniture: 'Furniture',
+  goodsTypeAppliances: 'Home Appliances',
+  goodsTypeMachineryTools: 'Machinery & Tools',
+  goodsTypeFashionHome: 'Fashion & Living',
+  goodsTypeOther: 'Other Goods',
 };
 
 const am: Dictionary = {
@@ -939,6 +989,30 @@ const am: Dictionary = {
   videoCameraError: 'ቀጥታ የቪዲዮ ካሜራ አልተገኘም። የመሳሪያዎን ካሜራ ወይም የቪዲዮ ፋይል መጫን ይችላሉ።',
   videoTooLargeError: 'የቪዲዮው መጠን በዝቷል (ከ30 ሰከንድ / 2.2 MB ያልበለጠ ይሁን)። እባክዎ አጭር ቪዲዮ ይቅረጹ ወይም ይምረጡ።',
   videoInvalidFileError: 'ይህን የቪዲዮ ፋይል ማንበብ አልተቻለም። እባክዎ MP4፣ WebM ወይም MOV ቪዲዮ ይምረጡ።',
+  vehicleTypeLabel: 'የመኪና ዓይነት (Type)',
+  vehicleModelLabel: 'የመኪና ሞዴል (Model)',
+  goodsTypeLabel: 'የዕቃ ዓይነት (Type)',
+  goodsModelLabel: 'ሞዴል / ብራንድ (Model)',
+  allVehicleTypes: 'ሁሉም የመኪና ዓይነቶች',
+  allGoodsTypes: 'ሁሉም የዕቃ ዓይነቶች',
+  allModels: 'ሁሉም ሞዴሎች',
+  vehicleModelPlaceholder: 'ሞዴል ይምረጡ ወይም ይጻፉ (ለምሳሌ፡ RAV4, Vitz, Hilux...)',
+  goodsModelPlaceholder: 'ሞዴል / ብራንድ ይምረጡ ወይም ይጻፉ (ለምሳሌ፡ iPhone, Samsung, LG...)',
+  vehicleNavHeading: 'የመኪና ዓይነት (Type) እና ሞዴል (Model) መምረጫ',
+  goodsNavHeading: 'የዕቃ ዓይነት (Type) እና ሞዴል (Model) መምረጫ',
+  vehicleTypeSuv: 'SUV / 4x4',
+  vehicleTypeSedan: 'ሴዳን (Sedan)',
+  vehicleTypeCompact: 'ኮምፓክት / ቪትዝ',
+  vehicleTypePickup: 'ፒካፕ (Pickup)',
+  vehicleTypeVan: 'ቫን / ሚኒባስ',
+  vehicleTypeTruck: 'የጭነት መኪና (Truck)',
+  goodsTypeElectronics: 'ኤሌክትሮኒክስ እና ቲቪ',
+  goodsTypePhonesTech: 'ስልክ እና ኮምፒውተር',
+  goodsTypeFurniture: 'የቤት ዕቃ (ፈርኒቸር)',
+  goodsTypeAppliances: 'የቤት ውስጥ መገልገያዎች',
+  goodsTypeMachineryTools: 'ማሽነሪ እና መሳሪያዎች',
+  goodsTypeFashionHome: 'ልብስ እና የውበት ዕቃ',
+  goodsTypeOther: 'ሌሎች ዕቃዎች',
 };
 
 export const translations: Record<Language, Dictionary> = { en, am };
@@ -1066,4 +1140,96 @@ export function getTenantPreferenceLabel(pref: TenantPreference, lang: Language)
       return t.tenantPrefAny;
   }
 }
+
+export const VEHICLE_TYPE_KEYS: VehicleType[] = [
+  'suv',
+  'sedan',
+  'compact',
+  'pickup',
+  'van',
+  'truck',
+];
+
+export const GOODS_TYPE_KEYS: GoodsType[] = [
+  'electronics',
+  'phones_tech',
+  'furniture',
+  'appliances',
+  'machinery_tools',
+  'fashion_home',
+  'other',
+];
+
+export const VEHICLE_MODEL_SUGGESTIONS: string[] = [
+  'Toyota RAV4',
+  'Toyota Vitz',
+  'Toyota Corolla',
+  'Toyota Yaris',
+  'Toyota Hilux',
+  'Toyota Land Cruiser',
+  'Hyundai Tucson',
+  'Hyundai Elantra',
+  'Suzuki Dzire',
+  'Suzuki Swift',
+  'BYD Song Plus',
+  'BYD Seagull',
+  'Kia Sportage',
+  'Isuzu NPR',
+];
+
+export const GOODS_MODEL_SUGGESTIONS: string[] = [
+  'iPhone 15 Pro',
+  'Samsung Galaxy S24',
+  'MacBook Pro',
+  'HP EliteBook',
+  'LG Smart TV',
+  'Samsung Fridge',
+  'Hisense Washer',
+  'Espresso Machine',
+  'Walnut Sofa Set',
+  'Office Desk & Chair',
+];
+
+export function getVehicleTypeLabel(value: string, lang: Language): string {
+  const t = translations[lang];
+  switch (value.toLowerCase()) {
+    case 'suv':
+      return t.vehicleTypeSuv;
+    case 'sedan':
+      return t.vehicleTypeSedan;
+    case 'compact':
+      return t.vehicleTypeCompact;
+    case 'pickup':
+      return t.vehicleTypePickup;
+    case 'van':
+      return t.vehicleTypeVan;
+    case 'truck':
+      return t.vehicleTypeTruck;
+    default:
+      return value;
+  }
+}
+
+export function getGoodsTypeLabel(value: string, lang: Language): string {
+  const t = translations[lang];
+  switch (value.toLowerCase()) {
+    case 'electronics':
+      return t.goodsTypeElectronics;
+    case 'phones_tech':
+      return t.goodsTypePhonesTech;
+    case 'furniture':
+      return t.goodsTypeFurniture;
+    case 'appliances':
+      return t.goodsTypeAppliances;
+    case 'machinery_tools':
+      return t.goodsTypeMachineryTools;
+    case 'fashion_home':
+      return t.goodsTypeFashionHome;
+    case 'other':
+      return t.goodsTypeOther;
+    default:
+      return value;
+  }
+}
+
 

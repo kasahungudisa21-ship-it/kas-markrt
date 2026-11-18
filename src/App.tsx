@@ -14,6 +14,7 @@ import { SellView } from './components/SellView';
 import { HERO_IMAGE, NEIGHBORHOOD_OPTIONS } from './data/showcaseListings';
 import {
   auth,
+  consumeRedirectSignInResult,
   getMySavedPhone,
   isAdminUser,
   markNotificationRead,
@@ -30,7 +31,16 @@ import {
   syncUserProfile,
   toggleSavedListing,
 } from './firebase';
-import { getNotificationEventTitle, translations } from './i18n';
+import {
+  getGoodsTypeLabel,
+  getNotificationEventTitle,
+  getVehicleTypeLabel,
+  GOODS_MODEL_SUGGESTIONS,
+  GOODS_TYPE_KEYS,
+  translations,
+  VEHICLE_MODEL_SUGGESTIONS,
+  VEHICLE_TYPE_KEYS,
+} from './i18n';
 import {
   AppNotification,
   BuyerRequest,
@@ -43,7 +53,13 @@ import {
   RoomClass,
   TransactionType,
 } from './types';
-import { formatFirestoreUserError, formatPrice } from './utils/format';
+import {
+  formatFirestoreUserError,
+  formatPrice,
+  matchesGoodsType,
+  matchesListingModel,
+  matchesVehicleType,
+} from './utils/format';
 import { playOrderChime, showBrowserOrderNotification } from './utils/notifications';
 
 type CategoryFilter = 'all' | 'properties' | ListingCategory;
@@ -59,6 +75,10 @@ export default function App() {
   const [txFilter, setTxFilter] = useState<TxFilter>('all');
   const [roomClassFilter, setRoomClassFilter] = useState<'all' | RoomClass>('all');
   const [tenantPrefFilter, setTenantPrefFilter] = useState<'all' | 'late' | 'bale_tedar'>('all');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all');
+  const [vehicleModelFilter, setVehicleModelFilter] = useState<string>('');
+  const [goodsTypeFilter, setGoodsTypeFilter] = useState<string>('all');
+  const [goodsModelFilter, setGoodsModelFilter] = useState<string>('');
   const [locationFilter, setLocationFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
@@ -79,6 +99,7 @@ export default function App() {
   const [activeToasts, setActiveToasts] = useState<AppNotification[]>([]);
   const [connectionsRequestedTab, setConnectionsRequestedTab] = useState<ConnectionsTab | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const hydratedNotifKeyRef = useRef<string | null>(null);
   const seenNotifIdsRef = useRef<Set<string>>(new Set());
@@ -93,10 +114,12 @@ export default function App() {
   const t = translations[lang];
 
   useEffect(() => {
+    consumeRedirectSignInResult().catch(() => {});
     const unsub = onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
       setAuthReady(true);
       if (nextUser) {
+        setAuthError(null);
         try {
           await syncUserProfile(nextUser);
         } catch {
@@ -333,6 +356,16 @@ export default function App() {
         if (itemTp !== tenantPrefFilter && itemTp !== 'any') return false;
       }
 
+      if (categoryFilter === 'vehicle') {
+        if (!matchesVehicleType(item, vehicleTypeFilter)) return false;
+        if (!matchesListingModel(item, 'vehicle', vehicleModelFilter)) return false;
+      }
+
+      if (categoryFilter === 'goods') {
+        if (!matchesGoodsType(item, goodsTypeFilter)) return false;
+        if (!matchesListingModel(item, 'goods', goodsModelFilter)) return false;
+      }
+
       const locQ = locationFilter.trim().toLowerCase();
       if (
         locQ &&
@@ -343,7 +376,11 @@ export default function App() {
       }
 
       if (q) {
-        const hay = `${item.title} ${item.description} ${item.neighborhood} ${item.city} ${item.category}`.toLowerCase();
+        const hay = `${item.title} ${item.description} ${item.neighborhood} ${item.city} ${
+          item.category
+        } ${item.specs?.vehicleType || ''} ${item.specs?.vehicleModel || ''} ${
+          item.specs?.goodsType || ''
+        } ${item.specs?.goodsModel || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
 
@@ -365,10 +402,20 @@ export default function App() {
     txFilter,
     roomClassFilter,
     tenantPrefFilter,
+    vehicleTypeFilter,
+    vehicleModelFilter,
+    goodsTypeFilter,
+    goodsModelFilter,
     locationFilter,
     searchQuery,
     sortOrder,
   ]);
+
+  const scrollToCatalog = () => {
+    window.setTimeout(() => {
+      document.getElementById('marketplace-catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
+  };
 
   const handleSelectNav = (nav: NavSection) => {
     setActiveNav(nav);
@@ -377,16 +424,31 @@ export default function App() {
       setTxFilter('all');
       setRoomClassFilter('all');
       setTenantPrefFilter('all');
+      setVehicleTypeFilter('all');
+      setVehicleModelFilter('');
+      setGoodsTypeFilter('all');
+      setGoodsModelFilter('');
     } else if (nav === 'properties') {
       setCategoryFilter('properties');
+      setVehicleTypeFilter('all');
+      setVehicleModelFilter('');
+      setGoodsTypeFilter('all');
+      setGoodsModelFilter('');
+      scrollToCatalog();
     } else if (nav === 'vehicles') {
       setCategoryFilter('vehicle');
       setRoomClassFilter('all');
       setTenantPrefFilter('all');
+      setGoodsTypeFilter('all');
+      setGoodsModelFilter('');
+      scrollToCatalog();
     } else if (nav === 'goods') {
       setCategoryFilter('goods');
       setRoomClassFilter('all');
       setTenantPrefFilter('all');
+      setVehicleTypeFilter('all');
+      setVehicleModelFilter('');
+      scrollToCatalog();
     }
   };
 
@@ -423,10 +485,29 @@ export default function App() {
   };
 
   const handleSignIn = async () => {
+    setAuthError(null);
     try {
       await signInWithGoogle();
-    } catch {
-      // Popup closed or cancelled by user
+    } catch (err) {
+      const code = (err as { code?: string })?.code || '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+      if (code === 'auth/unauthorized-domain') {
+        setAuthError(
+          lang === 'am'
+            ? `ይህ ዶሜይን (${host}) በ Firebase Authorized Domains ውስጥ አልተመዘገበም። Firebase Console -> Authentication -> Settings -> Authorized domains ውስጥ "${host}" ይጨምሩ።`
+            : `This domain (${host}) is not authorized in Firebase Auth. Add "${host}" under Firebase Console -> Authentication -> Settings -> Authorized domains.`
+        );
+      } else {
+        const msg = err instanceof Error ? err.message : String(err || '');
+        setAuthError(
+          lang === 'am'
+            ? `መግባት አልተቻለም (${code || msg})። በስልክ Chrome ወይም Safari ውስጥ መክፈትዎን ያረጋግጡ።`
+            : `Unable to sign in (${code || msg}). Try opening in Chrome or Safari on your phone.`
+        );
+      }
     }
   };
 
@@ -445,10 +526,38 @@ export default function App() {
     setTxFilter('all');
     setRoomClassFilter('all');
     setTenantPrefFilter('all');
+    setVehicleTypeFilter('all');
+    setVehicleModelFilter('');
+    setGoodsTypeFilter('all');
+    setGoodsModelFilter('');
     setLocationFilter('');
     setSearchQuery('');
     setSortOrder('newest');
   };
+
+  const vehicleModelOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    combinedListings.forEach((item) => {
+      const m = item.category === 'vehicle' ? item.specs?.vehicleModel?.trim() : '';
+      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    VEHICLE_MODEL_SUGGESTIONS.forEach((m) => {
+      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    return Array.from(map.values());
+  }, [combinedListings]);
+
+  const goodsModelOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    combinedListings.forEach((item) => {
+      const m = item.category === 'goods' ? item.specs?.goodsModel?.trim() : '';
+      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    GOODS_MODEL_SUGGESTIONS.forEach((m) => {
+      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    return Array.from(map.values());
+  }, [combinedListings]);
 
   const locationSuggestions = useMemo(() => {
     const set = new Set<string>(NEIGHBORHOOD_OPTIONS);
@@ -495,6 +604,21 @@ export default function App() {
       />
 
       <main className="flex-1">
+        {authError && (
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4">
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs flex items-center justify-between gap-3">
+              <span>{authError}</span>
+              <button
+                type="button"
+                onClick={() => setAuthError(null)}
+                aria-label="Dismiss error"
+                className="p-1 rounded-lg hover:bg-red-100 shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
         {activeNav === 'dashboard' ? (
           <DashboardView
             lang={lang}
@@ -822,8 +946,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setCategoryFilter('vehicle');
-                      setActiveNav('vehicles');
+                      handleSelectNav('vehicles');
                     }}
                     className={`group p-4 rounded-2xl border text-left transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 flex items-center gap-3.5 ${
                       categoryFilter === 'vehicle'
@@ -861,8 +984,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setCategoryFilter('goods');
-                      setActiveNav('goods');
+                      handleSelectNav('goods');
                     }}
                     className={`group p-4 rounded-2xl border text-left transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 flex items-center gap-3.5 ${
                       categoryFilter === 'goods'
@@ -921,7 +1043,17 @@ export default function App() {
                     <button
                       key={tab.key}
                       type="button"
-                      onClick={() => setCategoryFilter(tab.key)}
+                      onClick={() => {
+                        setCategoryFilter(tab.key);
+                        if (tab.key !== 'vehicle') {
+                          setVehicleTypeFilter('all');
+                          setVehicleModelFilter('');
+                        }
+                        if (tab.key !== 'goods') {
+                          setGoodsTypeFilter('all');
+                          setGoodsModelFilter('');
+                        }
+                      }}
                       className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-150 whitespace-nowrap shrink-0 ${
                         categoryFilter === tab.key
                           ? 'bg-[#0D4435] text-white shadow-sm'
@@ -1035,6 +1167,216 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Type & Model Sub-Navigation for Vehicles */}
+              {categoryFilter === 'vehicle' && (
+                <div className="bg-[#F4F8FF] border border-[#C7DCF9] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-[0_4px_18px_-12px_rgba(30,64,175,0.18)]">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-[#142F66] flex items-center gap-2">
+                      <Car className="w-4 h-4 text-[#1D4ED8]" />
+                      <span>{t.vehicleNavHeading}</span>
+                    </span>
+                    {(vehicleTypeFilter !== 'all' || vehicleModelFilter.trim() !== '') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVehicleTypeFilter('all');
+                          setVehicleModelFilter('');
+                        }}
+                        className="text-xs font-semibold text-[#1D4ED8] hover:underline"
+                      >
+                        {t.resetFilters}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div className="flex items-center gap-1.5 p-1 bg-white/90 border border-[#D4E4FA] rounded-xl overflow-x-auto max-w-full">
+                      <button
+                        type="button"
+                        onClick={() => setVehicleTypeFilter('all')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                          vehicleTypeFilter === 'all'
+                            ? 'bg-[#1E40AF] text-white shadow-sm'
+                            : 'text-[#1E3A8A] hover:bg-[#E8F1FE]'
+                        }`}
+                      >
+                        {t.allVehicleTypes}
+                      </button>
+                      {VEHICLE_TYPE_KEYS.map((vk) => (
+                        <button
+                          key={vk}
+                          type="button"
+                          onClick={() => setVehicleTypeFilter(vk)}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                            vehicleTypeFilter === vk
+                              ? 'bg-[#1E40AF] text-white shadow-sm'
+                              : 'text-[#1E3A8A] hover:bg-[#E8F1FE]'
+                          }`}
+                        >
+                          {getVehicleTypeLabel(vk, lang)}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <select
+                        aria-label={t.vehicleModelLabel}
+                        value={
+                          vehicleModelOptions.some(
+                            (m) => m.toLowerCase() === vehicleModelFilter.trim().toLowerCase()
+                          )
+                            ? vehicleModelOptions.find(
+                                (m) => m.toLowerCase() === vehicleModelFilter.trim().toLowerCase()
+                              ) || ''
+                            : ''
+                        }
+                        onChange={(e) => setVehicleModelFilter(e.target.value)}
+                        className="h-9 px-3 rounded-xl border border-[#BFD6F6] bg-white text-xs font-semibold text-[#142F66] focus:outline-none focus:ring-2 focus:ring-blue-700"
+                      >
+                        <option value="">{t.allModels}</option>
+                        {vehicleModelOptions.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="relative">
+                        <input
+                          type="text"
+                          list="browse-vehicle-models"
+                          aria-label={t.vehicleModelLabel}
+                          placeholder={t.vehicleModelPlaceholder}
+                          value={vehicleModelFilter}
+                          onChange={(e) => setVehicleModelFilter(e.target.value)}
+                          className="h-9 w-52 sm:w-60 pl-3 pr-7 rounded-xl border border-[#BFD6F6] bg-white text-xs text-[#102620] placeholder:text-[#5B7099] focus:outline-none focus:ring-2 focus:ring-blue-700"
+                        />
+                        {vehicleModelFilter && (
+                          <button
+                            type="button"
+                            aria-label="Clear vehicle model filter"
+                            onClick={() => setVehicleModelFilter('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#1D4ED8] hover:text-[#142F66]"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <datalist id="browse-vehicle-models">
+                          {vehicleModelOptions.map((m) => (
+                            <option key={m} value={m} />
+                          ))}
+                        </datalist>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Type & Model Sub-Navigation for Goods */}
+              {categoryFilter === 'goods' && (
+                <div className="bg-[#FDF4F8] border border-[#F5C7DC] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-[0_4px_18px_-12px_rgba(157,23,77,0.16)]">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-[#591432] flex items-center gap-2">
+                      <Package className="w-4 h-4 text-[#9D174D]" />
+                      <span>{t.goodsNavHeading}</span>
+                    </span>
+                    {(goodsTypeFilter !== 'all' || goodsModelFilter.trim() !== '') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGoodsTypeFilter('all');
+                          setGoodsModelFilter('');
+                        }}
+                        className="text-xs font-semibold text-[#9D174D] hover:underline"
+                      >
+                        {t.resetFilters}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div className="flex items-center gap-1.5 p-1 bg-white/90 border border-[#F4D0E2] rounded-xl overflow-x-auto max-w-full">
+                      <button
+                        type="button"
+                        onClick={() => setGoodsTypeFilter('all')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                          goodsTypeFilter === 'all'
+                            ? 'bg-[#9D174D] text-white shadow-sm'
+                            : 'text-[#782B4E] hover:bg-[#FCE8F2]'
+                        }`}
+                      >
+                        {t.allGoodsTypes}
+                      </button>
+                      {GOODS_TYPE_KEYS.map((gk) => (
+                        <button
+                          key={gk}
+                          type="button"
+                          onClick={() => setGoodsTypeFilter(gk)}
+                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                            goodsTypeFilter === gk
+                              ? 'bg-[#9D174D] text-white shadow-sm'
+                              : 'text-[#782B4E] hover:bg-[#FCE8F2]'
+                          }`}
+                        >
+                          {getGoodsTypeLabel(gk, lang)}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <select
+                        aria-label={t.goodsModelLabel}
+                        value={
+                          goodsModelOptions.some(
+                            (m) => m.toLowerCase() === goodsModelFilter.trim().toLowerCase()
+                          )
+                            ? goodsModelOptions.find(
+                                (m) => m.toLowerCase() === goodsModelFilter.trim().toLowerCase()
+                              ) || ''
+                            : ''
+                        }
+                        onChange={(e) => setGoodsModelFilter(e.target.value)}
+                        className="h-9 px-3 rounded-xl border border-[#F3C6DC] bg-white text-xs font-semibold text-[#591432] focus:outline-none focus:ring-2 focus:ring-rose-800"
+                      >
+                        <option value="">{t.allModels}</option>
+                        {goodsModelOptions.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="relative">
+                        <input
+                          type="text"
+                          list="browse-goods-models"
+                          aria-label={t.goodsModelLabel}
+                          placeholder={t.goodsModelPlaceholder}
+                          value={goodsModelFilter}
+                          onChange={(e) => setGoodsModelFilter(e.target.value)}
+                          className="h-9 w-52 sm:w-60 pl-3 pr-7 rounded-xl border border-[#F3C6DC] bg-white text-xs text-[#102620] placeholder:text-[#8E536E] focus:outline-none focus:ring-2 focus:ring-rose-800"
+                        />
+                        {goodsModelFilter && (
+                          <button
+                            type="button"
+                            aria-label="Clear goods model filter"
+                            onClick={() => setGoodsModelFilter('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9D174D] hover:text-[#591432]"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <datalist id="browse-goods-models">
+                          {goodsModelOptions.map((m) => (
+                            <option key={m} value={m} />
+                          ))}
+                        </datalist>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between text-xs px-0.5">
                 <span className="tabular-nums font-semibold text-[#0F4235]">
                   {filteredListings.length} {t.resultsCount}
@@ -1043,6 +1385,10 @@ export default function App() {
                   txFilter !== 'all' ||
                   roomClassFilter !== 'all' ||
                   tenantPrefFilter !== 'all' ||
+                  vehicleTypeFilter !== 'all' ||
+                  vehicleModelFilter.trim() !== '' ||
+                  goodsTypeFilter !== 'all' ||
+                  goodsModelFilter.trim() !== '' ||
                   locationFilter.trim() !== '' ||
                   searchQuery.trim() !== '') && (
                   <button

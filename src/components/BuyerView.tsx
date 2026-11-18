@@ -24,10 +24,16 @@ import {
 } from '../firebase';
 import {
   getCategoryLabel,
+  getGoodsTypeLabel,
   getRoomClassLabel,
   getTenantPreferenceLabel,
   getTransactionLabel,
+  getVehicleTypeLabel,
+  GOODS_MODEL_SUGGESTIONS,
+  GOODS_TYPE_KEYS,
   translations,
+  VEHICLE_MODEL_SUGGESTIONS,
+  VEHICLE_TYPE_KEYS,
 } from '../i18n';
 import {
   BuyerRequest,
@@ -40,7 +46,13 @@ import {
   TenantPreference,
   TransactionType,
 } from '../types';
-import { formatPrice, formatSpecsLine } from '../utils/format';
+import {
+  formatPrice,
+  formatSpecsLine,
+  matchesGoodsType,
+  matchesListingModel,
+  matchesVehicleType,
+} from '../utils/format';
 import { ListingCard } from './ListingCard';
 
 interface BuyerViewProps {
@@ -88,6 +100,10 @@ export function BuyerView({
   const [category, setCategory] = useState<'all' | ListingCategory>('all');
   const [roomClassFilter, setRoomClassFilter] = useState<'all' | RoomClass>('all');
   const [tenantPrefFilter, setTenantPrefFilter] = useState<'all' | 'late' | 'bale_tedar'>('all');
+  const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all');
+  const [vehicleModelFilter, setVehicleModelFilter] = useState<string>('');
+  const [goodsTypeFilter, setGoodsTypeFilter] = useState<string>('all');
+  const [goodsModelFilter, setGoodsModelFilter] = useState<string>('');
   const [neighborhood, setNeighborhood] = useState<string>('');
   const [maxBudget, setMaxBudget] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
@@ -142,6 +158,30 @@ export function BuyerView({
     { key: 'goods', label: t.catGoods, Icon: Package },
   ];
 
+  const vehicleModelOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    allListings.forEach((item) => {
+      const m = item.category === 'vehicle' ? item.specs?.vehicleModel?.trim() : '';
+      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    VEHICLE_MODEL_SUGGESTIONS.forEach((m) => {
+      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    return Array.from(map.values());
+  }, [allListings]);
+
+  const goodsModelOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    allListings.forEach((item) => {
+      const m = item.category === 'goods' ? item.specs?.goodsModel?.trim() : '';
+      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    GOODS_MODEL_SUGGESTIONS.forEach((m) => {
+      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+    });
+    return Array.from(map.values());
+  }, [allListings]);
+
   const matchingListings = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     const budgetNum = Number(maxBudget);
@@ -172,6 +212,14 @@ export function BuyerView({
         const itemTp = item.specs?.tenantPreference;
         if (itemTp !== tenantPrefFilter && itemTp !== 'any') return false;
       }
+      if (category === 'vehicle') {
+        if (!matchesVehicleType(item, vehicleTypeFilter)) return false;
+        if (!matchesListingModel(item, 'vehicle', vehicleModelFilter)) return false;
+      }
+      if (category === 'goods') {
+        if (!matchesGoodsType(item, goodsTypeFilter)) return false;
+        if (!matchesListingModel(item, 'goods', goodsModelFilter)) return false;
+      }
       const locQ = neighborhood.trim().toLowerCase();
       if (
         locQ &&
@@ -182,7 +230,11 @@ export function BuyerView({
       }
       if (hasBudget && item.price > budgetNum) return false;
       if (q) {
-        const hay = `${item.title} ${item.description} ${item.neighborhood} ${item.city}`.toLowerCase();
+        const hay = `${item.title} ${item.description} ${item.neighborhood} ${item.city} ${
+          item.specs?.vehicleType || ''
+        } ${item.specs?.vehicleModel || ''} ${item.specs?.goodsType || ''} ${
+          item.specs?.goodsModel || ''
+        }`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -193,6 +245,10 @@ export function BuyerView({
     category,
     roomClassFilter,
     tenantPrefFilter,
+    vehicleTypeFilter,
+    vehicleModelFilter,
+    goodsTypeFilter,
+    goodsModelFilter,
     neighborhood,
     maxBudget,
     keyword,
@@ -428,6 +484,14 @@ export function BuyerView({
                     setRoomClassFilter('all');
                     setTenantPrefFilter('all');
                   }
+                  if (key !== 'vehicle') {
+                    setVehicleTypeFilter('all');
+                    setVehicleModelFilter('');
+                  }
+                  if (key !== 'goods') {
+                    setGoodsTypeFilter('all');
+                    setGoodsModelFilter('');
+                  }
                 }}
                 className={`p-3 rounded-xl border text-left transition-colors flex flex-col gap-1.5 ${
                   active
@@ -555,6 +619,196 @@ export function BuyerView({
               </div>
             </div>
           )}
+
+        {category === 'vehicle' && (
+          <div className="p-4 rounded-xl bg-[#EEF4FF] border border-[#BFDBFE] space-y-3">
+            <div className="text-xs font-bold text-[#142F66]">{t.vehicleNavHeading}</div>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold text-[#1E40AF]">{t.vehicleTypeLabel}</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setVehicleTypeFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors whitespace-nowrap ${
+                      vehicleTypeFilter === 'all'
+                        ? 'border-[#1E40AF] bg-[#1E40AF] text-white'
+                        : 'border-[#BFD6F6] bg-white text-[#1E3A8A] hover:bg-[#E0ECFD]'
+                    }`}
+                  >
+                    {t.allVehicleTypes}
+                  </button>
+                  {VEHICLE_TYPE_KEYS.map((vk) => (
+                    <button
+                      key={vk}
+                      type="button"
+                      onClick={() => setVehicleTypeFilter(vk)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors whitespace-nowrap ${
+                        vehicleTypeFilter === vk
+                          ? 'border-[#1E40AF] bg-[#1E40AF] text-white'
+                          : 'border-[#BFD6F6] bg-white text-[#1E3A8A] hover:bg-[#E0ECFD]'
+                      }`}
+                    >
+                      {getVehicleTypeLabel(vk, lang)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#1E40AF] mb-1">
+                    {t.vehicleModelLabel}
+                  </label>
+                  <select
+                    aria-label={t.vehicleModelLabel}
+                    value={
+                      vehicleModelOptions.some(
+                        (m) => m.toLowerCase() === vehicleModelFilter.trim().toLowerCase()
+                      )
+                        ? vehicleModelOptions.find(
+                            (m) => m.toLowerCase() === vehicleModelFilter.trim().toLowerCase()
+                          ) || ''
+                        : ''
+                    }
+                    onChange={(e) => setVehicleModelFilter(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-[#BFD6F6] bg-white text-xs font-semibold text-[#142F66]"
+                  >
+                    <option value="">{t.allModels}</option>
+                    {vehicleModelOptions.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-[#1E40AF] mb-1">
+                    {t.searchButton} · {t.vehicleModelLabel}
+                  </label>
+                  <input
+                    type="text"
+                    list="buyer-vehicle-models"
+                    placeholder={t.vehicleModelPlaceholder}
+                    value={vehicleModelFilter}
+                    onChange={(e) => setVehicleModelFilter(e.target.value)}
+                    className="w-full h-9 pl-3 pr-8 rounded-lg border border-[#BFD6F6] bg-white text-xs text-[#102620]"
+                  />
+                  {vehicleModelFilter && (
+                    <button
+                      type="button"
+                      aria-label="Clear model filter"
+                      onClick={() => setVehicleModelFilter('')}
+                      className="absolute right-2.5 bottom-2 text-[#1E40AF] hover:text-[#142F66]"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <datalist id="buyer-vehicle-models">
+                    {vehicleModelOptions.map((m) => (
+                      <option key={m} value={m} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {category === 'goods' && (
+          <div className="p-4 rounded-xl bg-[#FDF2F8] border border-[#F5C2DC] space-y-3">
+            <div className="text-xs font-bold text-[#591432]">{t.goodsNavHeading}</div>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <div className="text-xs font-semibold text-[#9D174D]">{t.goodsTypeLabel}</div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGoodsTypeFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors whitespace-nowrap ${
+                      goodsTypeFilter === 'all'
+                        ? 'border-[#9D174D] bg-[#9D174D] text-white'
+                        : 'border-[#F3C6DC] bg-white text-[#782B4E] hover:bg-[#FCE7F3]'
+                    }`}
+                  >
+                    {t.allGoodsTypes}
+                  </button>
+                  {GOODS_TYPE_KEYS.map((gk) => (
+                    <button
+                      key={gk}
+                      type="button"
+                      onClick={() => setGoodsTypeFilter(gk)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors whitespace-nowrap ${
+                        goodsTypeFilter === gk
+                          ? 'border-[#9D174D] bg-[#9D174D] text-white'
+                          : 'border-[#F3C6DC] bg-white text-[#782B4E] hover:bg-[#FCE7F3]'
+                      }`}
+                    >
+                      {getGoodsTypeLabel(gk, lang)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#9D174D] mb-1">
+                    {t.goodsModelLabel}
+                  </label>
+                  <select
+                    aria-label={t.goodsModelLabel}
+                    value={
+                      goodsModelOptions.some(
+                        (m) => m.toLowerCase() === goodsModelFilter.trim().toLowerCase()
+                      )
+                        ? goodsModelOptions.find(
+                            (m) => m.toLowerCase() === goodsModelFilter.trim().toLowerCase()
+                          ) || ''
+                        : ''
+                    }
+                    onChange={(e) => setGoodsModelFilter(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-[#F3C6DC] bg-white text-xs font-semibold text-[#591432]"
+                  >
+                    <option value="">{t.allModels}</option>
+                    {goodsModelOptions.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-[#9D174D] mb-1">
+                    {t.searchButton} · {t.goodsModelLabel}
+                  </label>
+                  <input
+                    type="text"
+                    list="buyer-goods-models"
+                    placeholder={t.goodsModelPlaceholder}
+                    value={goodsModelFilter}
+                    onChange={(e) => setGoodsModelFilter(e.target.value)}
+                    className="w-full h-9 pl-3 pr-8 rounded-lg border border-[#F3C6DC] bg-white text-xs text-[#102620]"
+                  />
+                  {goodsModelFilter && (
+                    <button
+                      type="button"
+                      aria-label="Clear model filter"
+                      onClick={() => setGoodsModelFilter('')}
+                      className="absolute right-2.5 bottom-2 text-[#9D174D] hover:text-[#591432]"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <datalist id="buyer-goods-models">
+                    {goodsModelOptions.map((m) => (
+                      <option key={m} value={m} />
+                    ))}
+                  </datalist>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main 2-Column Buyer Workspace */}
@@ -656,6 +910,10 @@ export function BuyerView({
                   setCategory('all');
                   setRoomClassFilter('all');
                   setTenantPrefFilter('all');
+                  setVehicleTypeFilter('all');
+                  setVehicleModelFilter('');
+                  setGoodsTypeFilter('all');
+                  setGoodsModelFilter('');
                   setNeighborhood('');
                   setMaxBudget('');
                   setKeyword('');

@@ -53,11 +53,13 @@ export function Navbar({
   const isBuyActive = activeNav === 'buyer' && activeBuyerMode === 'sale';
   const isRentActive = activeNav === 'buyer' && activeBuyerMode === 'rent';
 
-  const links: { key: Exclude<NavSection, 'sell' | 'goods' | 'vehicles'>; label: string }[] = [
+  const links: { key: Exclude<NavSection, 'sell'>; label: string }[] = [
     { key: 'explore', label: t.navExplore },
     { key: 'dashboard', label: t.navDashboard },
     { key: 'buyer', label: t.navBuyerStudio },
     { key: 'properties', label: t.navProperties },
+    { key: 'vehicles', label: t.navVehicles },
+    { key: 'goods', label: t.navGoods },
     { key: 'connections', label: isAdmin ? t.navConnections : t.navConnectionsUser },
   ];
 
@@ -111,7 +113,7 @@ export function Navbar({
         {/* Zone 2: Clean Single-Line Typographic Navigation Track */}
         <nav
           aria-label="Primary navigation"
-          className={`hidden lg:flex items-stretch h-16 gap-5 xl:gap-7 text-sm font-medium ${
+          className={`hidden lg:flex items-stretch h-16 gap-3.5 xl:gap-5 text-[13px] xl:text-sm font-medium ${
             isDash ? 'text-slate-300' : 'text-emerald-100/85'
           }`}
         >

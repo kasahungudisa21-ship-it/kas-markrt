@@ -16,7 +16,17 @@ import {
 } from 'lucide-react';
 import { CATEGORY_PRESET_IMAGES, NEIGHBORHOOD_OPTIONS } from '../data/showcaseListings';
 import { createListing } from '../firebase';
-import { getCategoryLabel, getTransactionLabel, translations } from '../i18n';
+import {
+  getCategoryLabel,
+  getGoodsTypeLabel,
+  getTransactionLabel,
+  getVehicleTypeLabel,
+  GOODS_MODEL_SUGGESTIONS,
+  GOODS_TYPE_KEYS,
+  translations,
+  VEHICLE_MODEL_SUGGESTIONS,
+  VEHICLE_TYPE_KEYS,
+} from '../i18n';
 import {
   CurrencyCode,
   Language,
@@ -95,10 +105,14 @@ export function SellView({
   const [bathrooms, setBathrooms] = useState('2');
   const [areaSqm, setAreaSqm] = useState('145');
   const [titleDeed, setTitleDeed] = useState('Digital Carta');
+  const [vehicleType, setVehicleType] = useState('suv');
+  const [vehicleModel, setVehicleModel] = useState('');
   const [vehicleYear, setVehicleYear] = useState('2024');
   const [mileageKm, setMileageKm] = useState('12000');
   const [transmission, setTransmission] = useState('Automatic');
   const [fuelType, setFuelType] = useState('Hybrid');
+  const [goodsType, setGoodsType] = useState('electronics');
+  const [goodsModel, setGoodsModel] = useState('');
   const [itemCondition, setItemCondition] = useState('Like New');
 
   const [submitting, setSubmitting] = useState(false);
@@ -155,11 +169,15 @@ export function SellView({
       specs.areaSqm = Number(areaSqm) || 0;
       if (titleDeed.trim()) specs.titleDeed = titleDeed.trim();
     } else if (category === 'vehicle') {
+      if (vehicleType.trim()) specs.vehicleType = vehicleType.trim();
+      if (vehicleModel.trim()) specs.vehicleModel = vehicleModel.trim();
       specs.vehicleYear = Number(vehicleYear) || 2020;
       specs.mileageKm = Number(mileageKm) || 0;
       specs.transmission = transmission.trim();
       specs.fuelType = fuelType.trim();
     } else if (category === 'goods') {
+      if (goodsType.trim()) specs.goodsType = goodsType.trim();
+      if (goodsModel.trim()) specs.goodsModel = goodsModel.trim();
       specs.itemCondition = itemCondition.trim();
     }
     return specs;
@@ -283,6 +301,8 @@ export function SellView({
       });
       setTitle('');
       setDescription('');
+      setVehicleModel('');
+      setGoodsModel('');
       setDescriptionVoiceUrl('');
       setDescriptionVoiceDurationSec(0);
       setVideoDataUrl('');
@@ -765,78 +785,154 @@ export function SellView({
               )}
 
               {category === 'vehicle' && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-700 mb-1">
-                      {t.vehicleYear}
-                    </label>
-                    <input
-                      type="number"
-                      min={1960}
-                      max={2030}
-                      value={vehicleYear}
-                      onChange={(e) => setVehicleYear(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm tabular-nums"
-                    />
+                <div className="space-y-3 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.vehicleTypeLabel}
+                      </label>
+                      <select
+                        value={vehicleType}
+                        onChange={(e) => setVehicleType(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                      >
+                        {VEHICLE_TYPE_KEYS.map((vk) => (
+                          <option key={vk} value={vk}>
+                            {getVehicleTypeLabel(vk, lang)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.vehicleModelLabel}
+                      </label>
+                      <input
+                        type="text"
+                        list="sell-vehicle-models"
+                        maxLength={60}
+                        placeholder={t.vehicleModelPlaceholder}
+                        value={vehicleModel}
+                        onChange={(e) => setVehicleModel(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                      />
+                      <datalist id="sell-vehicle-models">
+                        {VEHICLE_MODEL_SUGGESTIONS.map((m) => (
+                          <option key={m} value={m} />
+                        ))}
+                      </datalist>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-700 mb-1">
-                      {t.mileageKm} (km)
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={2000000}
-                      value={mileageKm}
-                      onChange={(e) => setMileageKm(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm tabular-nums"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-700 mb-1">
-                      {t.transmission}
-                    </label>
-                    <select
-                      value={transmission}
-                      onChange={(e) => setTransmission(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
-                    >
-                      <option value="Automatic">Automatic</option>
-                      <option value="Manual">Manual</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-700 mb-1">
-                      {t.fuelType}
-                    </label>
-                    <select
-                      value={fuelType}
-                      onChange={(e) => setFuelType(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
-                    >
-                      <option value="Hybrid">Hybrid</option>
-                      <option value="Petrol">Petrol</option>
-                      <option value="Electric">Electric</option>
-                      <option value="Diesel">Diesel</option>
-                    </select>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.vehicleYear}
+                      </label>
+                      <input
+                        type="number"
+                        min={1960}
+                        max={2030}
+                        value={vehicleYear}
+                        onChange={(e) => setVehicleYear(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm tabular-nums"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.mileageKm} (km)
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={2000000}
+                        value={mileageKm}
+                        onChange={(e) => setMileageKm(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm tabular-nums"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.transmission}
+                      </label>
+                      <select
+                        value={transmission}
+                        onChange={(e) => setTransmission(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                      >
+                        <option value="Automatic">Automatic</option>
+                        <option value="Manual">Manual</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.fuelType}
+                      </label>
+                      <select
+                        value={fuelType}
+                        onChange={(e) => setFuelType(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                      >
+                        <option value="Hybrid">Hybrid</option>
+                        <option value="Petrol">Petrol</option>
+                        <option value="Electric">Electric</option>
+                        <option value="Diesel">Diesel</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
 
               {category === 'goods' && (
-                <div>
-                  <label className="block text-xs font-medium text-zinc-700 mb-1">
-                    {t.condition}
-                  </label>
-                  <select
-                    value={itemCondition}
-                    onChange={(e) => setItemCondition(e.target.value)}
-                    className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
-                  >
-                    <option value="Brand New">Brand New</option>
-                    <option value="Like New">Like New</option>
-                    <option value="Gently Used">Gently Used</option>
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 mb-1">
+                      {t.goodsTypeLabel}
+                    </label>
+                    <select
+                      value={goodsType}
+                      onChange={(e) => setGoodsType(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                    >
+                      {GOODS_TYPE_KEYS.map((gk) => (
+                        <option key={gk} value={gk}>
+                          {getGoodsTypeLabel(gk, lang)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 mb-1">
+                      {t.goodsModelLabel}
+                    </label>
+                    <input
+                      type="text"
+                      list="sell-goods-models"
+                      maxLength={60}
+                      placeholder={t.goodsModelPlaceholder}
+                      value={goodsModel}
+                      onChange={(e) => setGoodsModel(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                    />
+                    <datalist id="sell-goods-models">
+                      {GOODS_MODEL_SUGGESTIONS.map((m) => (
+                        <option key={m} value={m} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-700 mb-1">
+                      {t.condition}
+                    </label>
+                    <select
+                      value={itemCondition}
+                      onChange={(e) => setItemCondition(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                    >
+                      <option value="Brand New">Brand New</option>
+                      <option value="Like New">Like New</option>
+                      <option value="Gently Used">Gently Used</option>
+                    </select>
+                  </div>
                 </div>
               )}
 

@@ -1,8 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
+  getRedirectResult,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   User,
 } from 'firebase/auth';
@@ -89,6 +91,7 @@ const app = initializeApp(activeFirebaseConfig);
 export const db = activeDatabaseId ? getFirestore(app, activeDatabaseId) : getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 export enum OperationType {
   CREATE = 'create',
@@ -153,8 +156,28 @@ async function testConnection() {
 }
 testConnection();
 
+export async function consumeRedirectSignInResult(): Promise<void> {
+  try {
+    await getRedirectResult(auth);
+  } catch (error) {
+    console.warn('Redirect sign-in check:', error);
+  }
+}
+
 export async function signInWithGoogle() {
-  return signInWithPopup(auth, googleProvider);
+  try {
+    return await signInWithPopup(auth, googleProvider);
+  } catch (err) {
+    const code = (err as { code?: string })?.code || '';
+    if (
+      code === 'auth/popup-blocked' ||
+      code === 'auth/operation-not-supported-in-this-environment'
+    ) {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+    throw err;
+  }
 }
 
 export async function signOutAccount() {
@@ -463,6 +486,12 @@ function buildCleanSpecs(specs: ListingSpecs): ListingSpecs {
   if (specs.titleDeed && specs.titleDeed.trim()) {
     clean.titleDeed = specs.titleDeed.trim().slice(0, 60);
   }
+  if (specs.vehicleType && specs.vehicleType.trim()) {
+    clean.vehicleType = specs.vehicleType.trim().slice(0, 60);
+  }
+  if (specs.vehicleModel && specs.vehicleModel.trim()) {
+    clean.vehicleModel = specs.vehicleModel.trim().slice(0, 60);
+  }
   if (typeof specs.vehicleYear === 'number' && Number.isFinite(specs.vehicleYear)) {
     clean.vehicleYear = Math.min(2030, Math.max(1960, Math.round(specs.vehicleYear)));
   }
@@ -474,6 +503,12 @@ function buildCleanSpecs(specs: ListingSpecs): ListingSpecs {
   }
   if (specs.fuelType && specs.fuelType.trim()) {
     clean.fuelType = specs.fuelType.trim().slice(0, 30);
+  }
+  if (specs.goodsType && specs.goodsType.trim()) {
+    clean.goodsType = specs.goodsType.trim().slice(0, 60);
+  }
+  if (specs.goodsModel && specs.goodsModel.trim()) {
+    clean.goodsModel = specs.goodsModel.trim().slice(0, 60);
   }
   if (specs.itemCondition && specs.itemCondition.trim()) {
     clean.itemCondition = specs.itemCondition.trim().slice(0, 30);

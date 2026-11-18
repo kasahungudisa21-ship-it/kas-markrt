@@ -69,10 +69,14 @@ service cloud.firestore {
           'bathrooms',
           'areaSqm',
           'titleDeed',
+          'vehicleType',
+          'vehicleModel',
           'vehicleYear',
           'mileageKm',
           'transmission',
           'fuelType',
+          'goodsType',
+          'goodsModel',
           'itemCondition',
           'roomClass',
           'tenantPreference'
@@ -81,10 +85,14 @@ service cloud.firestore {
         && (!('bathrooms' in specs) || (specs.bathrooms is int && specs.bathrooms >= 0 && specs.bathrooms <= 30))
         && (!('areaSqm' in specs) || (specs.areaSqm is number && specs.areaSqm >= 0 && specs.areaSqm <= 1000000))
         && (!('titleDeed' in specs) || (specs.titleDeed is string && specs.titleDeed.size() <= 60))
+        && (!('vehicleType' in specs) || (specs.vehicleType is string && specs.vehicleType.size() <= 60))
+        && (!('vehicleModel' in specs) || (specs.vehicleModel is string && specs.vehicleModel.size() <= 60))
         && (!('vehicleYear' in specs) || (specs.vehicleYear is int && specs.vehicleYear >= 1960 && specs.vehicleYear <= 2030))
         && (!('mileageKm' in specs) || (specs.mileageKm is number && specs.mileageKm >= 0 && specs.mileageKm <= 2000000))
         && (!('transmission' in specs) || (specs.transmission is string && specs.transmission.size() <= 30))
         && (!('fuelType' in specs) || (specs.fuelType is string && specs.fuelType.size() <= 30))
+        && (!('goodsType' in specs) || (specs.goodsType is string && specs.goodsType.size() <= 60))
+        && (!('goodsModel' in specs) || (specs.goodsModel is string && specs.goodsModel.size() <= 60))
         && (!('itemCondition' in specs) || (specs.itemCondition is string && specs.itemCondition.size() <= 30))
         && (!('roomClass' in specs) || specs.roomClass in ['1_class', '2_class', '3_plus'])
         && (!('tenantPreference' in specs) || specs.tenantPreference in ['late', 'bale_tedar', 'any']);
