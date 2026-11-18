@@ -18,9 +18,12 @@ import { CATEGORY_PRESET_IMAGES, NEIGHBORHOOD_OPTIONS } from '../data/showcaseLi
 import { createListing } from '../firebase';
 import {
   getCategoryLabel,
+  getGoodsConditionLabel,
   getGoodsTypeLabel,
   getTransactionLabel,
   getVehicleTypeLabel,
+  GOODS_CONDITION_KEYS,
+  GOODS_MODEL_GROUPS,
   GOODS_MODEL_SUGGESTIONS,
   GOODS_TYPE_KEYS,
   translations,
@@ -913,55 +916,88 @@ export function SellView({
               )}
 
               {category === 'goods' && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-700 mb-1">
-                      {t.goodsTypeLabel}
-                    </label>
-                    <select
-                      value={goodsType}
-                      onChange={(e) => setGoodsType(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
-                    >
-                      {GOODS_TYPE_KEYS.map((gk) => (
-                        <option key={gk} value={gk}>
-                          {getGoodsTypeLabel(gk, lang)}
-                        </option>
-                      ))}
-                    </select>
+                <div className="space-y-3 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.goodsTypeLabel}
+                      </label>
+                      <select
+                        value={goodsType}
+                        onChange={(e) => setGoodsType(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                      >
+                        {GOODS_TYPE_KEYS.map((gk) => (
+                          <option key={gk} value={gk}>
+                            {getGoodsTypeLabel(gk, lang)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        {t.condition}
+                      </label>
+                      <select
+                        value={itemCondition}
+                        onChange={(e) => setItemCondition(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                      >
+                        {GOODS_CONDITION_KEYS.map((ck) => (
+                          <option key={ck} value={ck}>
+                            {getGoodsConditionLabel(ck, lang)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-zinc-700 mb-1">
                       {t.goodsModelLabel}
                     </label>
-                    <input
-                      type="text"
-                      list="sell-goods-models"
-                      maxLength={60}
-                      placeholder={t.goodsModelPlaceholder}
-                      value={goodsModel}
-                      onChange={(e) => setGoodsModel(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
-                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <select
+                        aria-label={t.goodsModelLabel}
+                        value={
+                          GOODS_MODEL_SUGGESTIONS.some(
+                            (m) => m.toLowerCase() === goodsModel.trim().toLowerCase()
+                          )
+                            ? GOODS_MODEL_SUGGESTIONS.find(
+                                (m) => m.toLowerCase() === goodsModel.trim().toLowerCase()
+                              ) || ''
+                            : ''
+                        }
+                        onChange={(e) => {
+                          if (e.target.value) setGoodsModel(e.target.value);
+                        }}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white text-zinc-900"
+                      >
+                        <option value="">{t.allModels}</option>
+                        {GOODS_MODEL_GROUPS.map((group) => (
+                          <optgroup key={group.group} label={group.group}>
+                            {group.models.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        list="sell-goods-models"
+                        maxLength={60}
+                        placeholder={t.goodsModelPlaceholder}
+                        value={goodsModel}
+                        onChange={(e) => setGoodsModel(e.target.value)}
+                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                      />
+                    </div>
                     <datalist id="sell-goods-models">
                       {GOODS_MODEL_SUGGESTIONS.map((m) => (
                         <option key={m} value={m} />
                       ))}
                     </datalist>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-zinc-700 mb-1">
-                      {t.condition}
-                    </label>
-                    <select
-                      value={itemCondition}
-                      onChange={(e) => setItemCondition(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
-                    >
-                      <option value="Brand New">Brand New</option>
-                      <option value="Like New">Like New</option>
-                      <option value="Gently Used">Gently Used</option>
-                    </select>
                   </div>
                 </div>
               )}

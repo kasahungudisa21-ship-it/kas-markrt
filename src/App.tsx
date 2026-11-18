@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { BellRing, Building2, Car, Globe, LogOut, MapPin, Package, Search, X } from 'lucide-react';
+import { BellRing, Building2, Calendar, Car, Globe, LogOut, MapPin, Package, Search, X } from 'lucide-react';
 import { BuyerView } from './components/BuyerView';
 import { ConnectionsTab, ConnectionsView } from './components/ConnectionsView';
 import { DashboardTheme, DashboardView } from './components/DashboardView';
@@ -32,15 +32,20 @@ import {
   toggleSavedListing,
 } from './firebase';
 import {
+  getGoodsConditionLabel,
   getGoodsTypeLabel,
   getNotificationEventTitle,
   getVehicleTypeLabel,
+  GOODS_CONDITION_KEYS,
+  GOODS_ITEM_SUGGESTIONS,
+  GOODS_MODEL_GROUPS,
   GOODS_MODEL_SUGGESTIONS,
   GOODS_TYPE_KEYS,
   translations,
   VEHICLE_MODEL_GROUPS,
   VEHICLE_MODEL_SUGGESTIONS,
   VEHICLE_TYPE_KEYS,
+  VEHICLE_YEAR_SUGGESTIONS,
 } from './i18n';
 import {
   AppNotification,
@@ -57,9 +62,12 @@ import {
 import {
   formatFirestoreUserError,
   formatPrice,
+  matchesGoodsCondition,
+  matchesGoodsItem,
   matchesGoodsType,
   matchesListingModel,
   matchesVehicleType,
+  matchesVehicleYear,
 } from './utils/format';
 import { playOrderChime, showBrowserOrderNotification } from './utils/notifications';
 
@@ -78,8 +86,11 @@ export default function App() {
   const [tenantPrefFilter, setTenantPrefFilter] = useState<'all' | 'late' | 'bale_tedar'>('all');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all');
   const [vehicleModelFilter, setVehicleModelFilter] = useState<string>('');
+  const [vehicleYearFilter, setVehicleYearFilter] = useState<string>('');
   const [goodsTypeFilter, setGoodsTypeFilter] = useState<string>('all');
   const [goodsModelFilter, setGoodsModelFilter] = useState<string>('');
+  const [goodsItemFilter, setGoodsItemFilter] = useState<string>('');
+  const [goodsConditionFilter, setGoodsConditionFilter] = useState<string>('all');
   const [locationFilter, setLocationFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
@@ -360,11 +371,14 @@ export default function App() {
       if (categoryFilter === 'vehicle') {
         if (!matchesVehicleType(item, vehicleTypeFilter)) return false;
         if (!matchesListingModel(item, 'vehicle', vehicleModelFilter)) return false;
+        if (!matchesVehicleYear(item, vehicleYearFilter)) return false;
       }
 
       if (categoryFilter === 'goods') {
         if (!matchesGoodsType(item, goodsTypeFilter)) return false;
         if (!matchesListingModel(item, 'goods', goodsModelFilter)) return false;
+        if (!matchesGoodsItem(item, goodsItemFilter)) return false;
+        if (!matchesGoodsCondition(item, goodsConditionFilter)) return false;
       }
 
       const locQ = locationFilter.trim().toLowerCase();
@@ -380,8 +394,10 @@ export default function App() {
         const hay = `${item.title} ${item.description} ${item.neighborhood} ${item.city} ${
           item.category
         } ${item.specs?.vehicleType || ''} ${item.specs?.vehicleModel || ''} ${
-          item.specs?.goodsType || ''
-        } ${item.specs?.goodsModel || ''}`.toLowerCase();
+          item.specs?.vehicleYear ?? ''
+        } ${item.specs?.goodsType || ''} ${item.specs?.goodsModel || ''} ${
+          item.specs?.itemCondition || ''
+        }`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
 
@@ -405,8 +421,11 @@ export default function App() {
     tenantPrefFilter,
     vehicleTypeFilter,
     vehicleModelFilter,
+    vehicleYearFilter,
     goodsTypeFilter,
     goodsModelFilter,
+    goodsItemFilter,
+    goodsConditionFilter,
     locationFilter,
     searchQuery,
     sortOrder,
@@ -427,14 +446,20 @@ export default function App() {
       setTenantPrefFilter('all');
       setVehicleTypeFilter('all');
       setVehicleModelFilter('');
+      setVehicleYearFilter('');
       setGoodsTypeFilter('all');
       setGoodsModelFilter('');
+      setGoodsItemFilter('');
+      setGoodsConditionFilter('all');
     } else if (nav === 'properties') {
       setCategoryFilter('properties');
       setVehicleTypeFilter('all');
       setVehicleModelFilter('');
+      setVehicleYearFilter('');
       setGoodsTypeFilter('all');
       setGoodsModelFilter('');
+      setGoodsItemFilter('');
+      setGoodsConditionFilter('all');
       scrollToCatalog();
     } else if (nav === 'vehicles') {
       setCategoryFilter('vehicle');
@@ -442,6 +467,8 @@ export default function App() {
       setTenantPrefFilter('all');
       setGoodsTypeFilter('all');
       setGoodsModelFilter('');
+      setGoodsItemFilter('');
+      setGoodsConditionFilter('all');
       scrollToCatalog();
     } else if (nav === 'goods') {
       setCategoryFilter('goods');
@@ -449,6 +476,7 @@ export default function App() {
       setTenantPrefFilter('all');
       setVehicleTypeFilter('all');
       setVehicleModelFilter('');
+      setVehicleYearFilter('');
       scrollToCatalog();
     }
   };
@@ -529,8 +557,11 @@ export default function App() {
     setTenantPrefFilter('all');
     setVehicleTypeFilter('all');
     setVehicleModelFilter('');
+    setVehicleYearFilter('');
     setGoodsTypeFilter('all');
     setGoodsModelFilter('');
+    setGoodsItemFilter('');
+    setGoodsConditionFilter('all');
     setLocationFilter('');
     setSearchQuery('');
     setSortOrder('newest');
@@ -552,17 +583,31 @@ export default function App() {
     return [...customVehicleModels, ...VEHICLE_MODEL_SUGGESTIONS];
   }, [customVehicleModels]);
 
-  const goodsModelOptions = useMemo(() => {
+  const vehicleYearOptions = useMemo(() => {
+    const years = new Set<string>(VEHICLE_YEAR_SUGGESTIONS);
+    combinedListings.forEach((item) => {
+      if (item.category === 'vehicle' && typeof item.specs?.vehicleYear === 'number') {
+        years.add(String(item.specs.vehicleYear));
+      }
+    });
+    return Array.from(years).sort((a, b) => Number(b) - Number(a));
+  }, [combinedListings]);
+
+  const customGoodsModels = useMemo(() => {
+    const known = new Set(GOODS_MODEL_SUGGESTIONS.map((m) => m.toLowerCase()));
     const map = new Map<string, string>();
     combinedListings.forEach((item) => {
       const m = item.category === 'goods' ? item.specs?.goodsModel?.trim() : '';
-      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
-    });
-    GOODS_MODEL_SUGGESTIONS.forEach((m) => {
-      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+      if (m && !known.has(m.toLowerCase()) && !map.has(m.toLowerCase())) {
+        map.set(m.toLowerCase(), m);
+      }
     });
     return Array.from(map.values());
   }, [combinedListings]);
+
+  const goodsModelOptions = useMemo(() => {
+    return [...customGoodsModels, ...GOODS_MODEL_SUGGESTIONS];
+  }, [customGoodsModels]);
 
   const locationSuggestions = useMemo(() => {
     const set = new Set<string>(NEIGHBORHOOD_OPTIONS);
@@ -1061,10 +1106,13 @@ export default function App() {
                         if (tab.key !== 'vehicle') {
                           setVehicleTypeFilter('all');
                           setVehicleModelFilter('');
+                          setVehicleYearFilter('');
                         }
                         if (tab.key !== 'goods') {
                           setGoodsTypeFilter('all');
                           setGoodsModelFilter('');
+                          setGoodsItemFilter('');
+                          setGoodsConditionFilter('all');
                         }
                       }}
                       className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-150 whitespace-nowrap shrink-0 ${
@@ -1193,12 +1241,15 @@ export default function App() {
                       <Car className="w-4 h-4 text-[#1D4ED8]" />
                       <span>{t.vehicleNavHeading}</span>
                     </span>
-                    {(vehicleTypeFilter !== 'all' || vehicleModelFilter.trim() !== '') && (
+                    {(vehicleTypeFilter !== 'all' ||
+                      vehicleModelFilter.trim() !== '' ||
+                      vehicleYearFilter.trim() !== '') && (
                       <button
                         type="button"
                         onClick={() => {
                           setVehicleTypeFilter('all');
                           setVehicleModelFilter('');
+                          setVehicleYearFilter('');
                         }}
                         className="text-xs font-semibold text-[#1D4ED8] hover:underline"
                       >
@@ -1298,12 +1349,60 @@ export default function App() {
                           ))}
                         </datalist>
                       </div>
+
+                      <select
+                        aria-label={t.vehicleYear}
+                        value={
+                          vehicleYearOptions.includes(vehicleYearFilter.trim())
+                            ? vehicleYearFilter.trim()
+                            : ''
+                        }
+                        onChange={(e) => setVehicleYearFilter(e.target.value)}
+                        className="h-9 px-3 rounded-xl border border-[#BFD6F6] bg-white text-xs font-semibold text-[#142F66] tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-700"
+                      >
+                        <option value="">{t.allYears}</option>
+                        {vehicleYearOptions.map((y) => (
+                          <option key={y} value={y}>
+                            {y}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="relative">
+                        <Calendar className="w-3.5 h-3.5 text-[#1D4ED8] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          list="browse-vehicle-years"
+                          maxLength={12}
+                          aria-label={t.vehicleYear}
+                          placeholder={t.vehicleYearFilterPlaceholder}
+                          value={vehicleYearFilter}
+                          onChange={(e) => setVehicleYearFilter(e.target.value)}
+                          className="h-9 w-48 sm:w-56 pl-8 pr-7 rounded-xl border border-[#BFD6F6] bg-white text-xs tabular-nums text-[#102620] placeholder:text-[#5B7099] focus:outline-none focus:ring-2 focus:ring-blue-700"
+                        />
+                        {vehicleYearFilter && (
+                          <button
+                            type="button"
+                            aria-label="Clear vehicle year filter"
+                            onClick={() => setVehicleYearFilter('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#1D4ED8] hover:text-[#142F66]"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <datalist id="browse-vehicle-years">
+                          {vehicleYearOptions.map((y) => (
+                            <option key={y} value={y} />
+                          ))}
+                        </datalist>
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Type & Model Sub-Navigation for Goods */}
+              {/* Type, Model & Condition Sub-Navigation for Goods */}
               {categoryFilter === 'goods' && (
                 <div className="bg-[#FDF4F8] border border-[#F5C7DC] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-[0_4px_18px_-12px_rgba(157,23,77,0.16)]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1311,12 +1410,17 @@ export default function App() {
                       <Package className="w-4 h-4 text-[#9D174D]" />
                       <span>{t.goodsNavHeading}</span>
                     </span>
-                    {(goodsTypeFilter !== 'all' || goodsModelFilter.trim() !== '') && (
+                    {(goodsTypeFilter !== 'all' ||
+                      goodsModelFilter.trim() !== '' ||
+                      goodsItemFilter.trim() !== '' ||
+                      goodsConditionFilter !== 'all') && (
                       <button
                         type="button"
                         onClick={() => {
                           setGoodsTypeFilter('all');
                           setGoodsModelFilter('');
+                          setGoodsItemFilter('');
+                          setGoodsConditionFilter('all');
                         }}
                         className="text-xs font-semibold text-[#9D174D] hover:underline"
                       >
@@ -1325,8 +1429,8 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div className="flex items-center gap-1.5 p-1 bg-white/90 border border-[#F4D0E2] rounded-xl overflow-x-auto max-w-full">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-white/90 border border-[#F4D0E2] rounded-xl">
                       <button
                         type="button"
                         onClick={() => setGoodsTypeFilter('all')}
@@ -1354,7 +1458,7 @@ export default function App() {
                       ))}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
                         aria-label={t.goodsModelLabel}
                         value={
@@ -1367,13 +1471,26 @@ export default function App() {
                             : ''
                         }
                         onChange={(e) => setGoodsModelFilter(e.target.value)}
-                        className="h-9 px-3 rounded-xl border border-[#F3C6DC] bg-white text-xs font-semibold text-[#591432] focus:outline-none focus:ring-2 focus:ring-rose-800"
+                        className="h-9 px-3 rounded-xl border border-[#F3C6DC] bg-white text-xs font-semibold text-[#591432] focus:outline-none focus:ring-2 focus:ring-rose-800 max-w-full"
                       >
                         <option value="">{t.allModels}</option>
-                        {goodsModelOptions.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
+                        {customGoodsModels.length > 0 && (
+                          <optgroup label="Listed">
+                            {customGoodsModels.map((m) => (
+                              <option key={`custom-${m}`} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {GOODS_MODEL_GROUPS.map((group) => (
+                          <optgroup key={group.group} label={group.group}>
+                            {group.models.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
 
@@ -1403,6 +1520,48 @@ export default function App() {
                           ))}
                         </datalist>
                       </div>
+
+                      <div className="relative">
+                        <Package className="w-3.5 h-3.5 text-[#9D174D] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          list="browse-goods-items"
+                          aria-label={t.goodsNameLabel}
+                          placeholder={t.goodsNamePlaceholder}
+                          value={goodsItemFilter}
+                          onChange={(e) => setGoodsItemFilter(e.target.value)}
+                          className="h-9 w-56 sm:w-64 pl-8 pr-7 rounded-xl border border-[#F3C6DC] bg-white text-xs text-[#102620] placeholder:text-[#8E536E] focus:outline-none focus:ring-2 focus:ring-rose-800"
+                        />
+                        {goodsItemFilter && (
+                          <button
+                            type="button"
+                            aria-label="Clear goods item filter"
+                            onClick={() => setGoodsItemFilter('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#9D174D] hover:text-[#591432]"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <datalist id="browse-goods-items">
+                          {GOODS_ITEM_SUGGESTIONS.map((item) => (
+                            <option key={item} value={item} />
+                          ))}
+                        </datalist>
+                      </div>
+
+                      <select
+                        aria-label={t.condition}
+                        value={goodsConditionFilter}
+                        onChange={(e) => setGoodsConditionFilter(e.target.value)}
+                        className="h-9 px-3 rounded-xl border border-[#F3C6DC] bg-white text-xs font-semibold text-[#591432] focus:outline-none focus:ring-2 focus:ring-rose-800"
+                      >
+                        <option value="all">{t.allConditions}</option>
+                        {GOODS_CONDITION_KEYS.map((ck) => (
+                          <option key={ck} value={ck}>
+                            {getGoodsConditionLabel(ck, lang)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -1418,8 +1577,11 @@ export default function App() {
                   tenantPrefFilter !== 'all' ||
                   vehicleTypeFilter !== 'all' ||
                   vehicleModelFilter.trim() !== '' ||
+                  vehicleYearFilter.trim() !== '' ||
                   goodsTypeFilter !== 'all' ||
                   goodsModelFilter.trim() !== '' ||
+                  goodsItemFilter.trim() !== '' ||
+                  goodsConditionFilter !== 'all' ||
                   locationFilter.trim() !== '' ||
                   searchQuery.trim() !== '') && (
                   <button

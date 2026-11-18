@@ -45,12 +45,19 @@ export type VehicleType =
   | 'machinery';
 
 export type GoodsType =
-  | 'electronics'
   | 'phones_tech'
-  | 'furniture'
+  | 'computers_office'
+  | 'electronics'
   | 'appliances'
+  | 'furniture'
+  | 'solar_power'
   | 'machinery_tools'
+  | 'auto_parts'
   | 'fashion_home'
+  | 'beauty_health'
+  | 'baby_kids'
+  | 'sports_fitness'
+  | 'business_agro'
   | 'other';
 
 export interface ListingSpecs {

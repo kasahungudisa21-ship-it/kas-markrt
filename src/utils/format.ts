@@ -1,4 +1,5 @@
 import {
+  getGoodsConditionLabel,
   getGoodsTypeLabel,
   getPeriodLabel,
   getRoomClassLabel,
@@ -81,7 +82,7 @@ export function formatSpecsLine(listing: Listing, lang: Language): string {
       parts.push(s.goodsModel);
     }
     if (s.itemCondition) {
-      parts.push(s.itemCondition);
+      parts.push(getGoodsConditionLabel(s.itemCondition, lang));
     }
     parts.push(listing.city);
   }
@@ -109,12 +110,19 @@ const VEHICLE_TYPE_KEYWORDS: Record<string, string[]> = {
 };
 
 const GOODS_TYPE_KEYWORDS: Record<string, string[]> = {
-  electronics: ['tv', 'television', 'speaker', 'audio', 'camera', 'projector', 'electronics', 'playstation'],
-  phones_tech: ['phone', 'iphone', 'samsung', 'galaxy', 'laptop', 'macbook', 'computer', 'pc', 'tablet', 'ipad', 'hp', 'dell'],
-  furniture: ['sofa', 'chair', 'table', 'bed', 'desk', 'cabinet', 'wardrobe', 'furniture', 'walnut', 'couch'],
-  appliances: ['fridge', 'refrigerator', 'washer', 'washing', 'microwave', 'espresso', 'oven', 'stove', 'blender', 'appliance', 'hisense', 'lg', 'bosch'],
-  machinery_tools: ['generator', 'drill', 'compressor', 'machine', 'machinery', 'tool', 'pump', 'welding'],
-  fashion_home: ['watch', 'shoes', 'jacket', 'bag', 'dress', 'carpet', 'curtain', 'decor', 'lamp', 'perfume'],
+  phones_tech: ['phone', 'iphone', 'samsung', 'galaxy', 'xiaomi', 'redmi', 'tecno', 'infinix', 'pixel', 'ipad', 'tablet', 'apple watch'],
+  computers_office: ['laptop', 'macbook', 'computer', 'pc', 'hp', 'dell', 'lenovo', 'thinkpad', 'asus', 'acer', 'printer', 'router', 'starlink'],
+  electronics: ['tv', 'television', 'oled', 'qled', 'speaker', 'audio', 'camera', 'projector', 'playstation', 'ps5', 'xbox', 'jbl', 'soundbar'],
+  appliances: ['fridge', 'refrigerator', 'washer', 'washing', 'dishwasher', 'microwave', 'espresso', 'air fryer', 'oven', 'stove', 'blender', 'dispenser', 'hisense', 'beko'],
+  furniture: ['sofa', 'chair', 'table', 'bed', 'mattress', 'desk', 'cabinet', 'wardrobe', 'closet', 'furniture', 'walnut', 'couch', 'carpet', 'rug'],
+  solar_power: ['solar', 'inverter', 'ecoflow', 'anker', 'generator', 'ups', 'stabilizer', 'battery'],
+  machinery_tools: ['drill', 'grinder', 'compressor', 'machine', 'machinery', 'tool', 'pump', 'welding', 'bosch'],
+  auto_parts: ['tire', 'rim', 'alloy', 'dashcam', 'car screen', 'car battery', 'spare part', 'headlight', 'brake'],
+  fashion_home: ['watch', 'shoes', 'sneaker', 'nike', 'adidas', 'jacket', 'bag', 'dress', 'suit', 'perfume', 'fashion'],
+  beauty_health: ['beauty', 'skincare', 'hair', 'dryer', 'makeup', 'cosmetic', 'perfume', 'salon', 'massage'],
+  baby_kids: ['baby', 'stroller', 'crib', 'kids', 'toy', 'car seat', 'walker'],
+  sports_fitness: ['treadmill', 'gym', 'dumbbell', 'bicycle', 'bike', 'football', 'fitness', 'sport'],
+  business_agro: ['bakery', 'cafe', 'pos', 'commercial', 'restaurant', 'agro', 'farm', 'incubator', 'mill'],
 };
 
 export function matchesVehicleType(listing: Listing, typeFilter: string): boolean {
@@ -152,6 +160,70 @@ export function matchesGoodsType(listing: Listing, typeFilter: string): boolean 
   return keywords.some((kw) => hay.includes(kw));
 }
 
+export function matchesGoodsCondition(listing: Listing, conditionFilter: string): boolean {
+  if (!conditionFilter || conditionFilter === 'all') return true;
+  if (listing.category !== 'goods') return false;
+  const target = conditionFilter.trim().toLowerCase();
+  const cond = (listing.specs?.itemCondition || '').trim().toLowerCase();
+  if (cond) {
+    if (target.includes('used')) return cond.includes('used');
+    return cond === target;
+  }
+  const hay = `${listing.title} ${listing.description}`.toLowerCase();
+  if (target === 'brand new') return hay.includes('brand new') || hay.includes('አዲስ');
+  if (target === 'like new') return hay.includes('like new');
+  if (target.includes('used')) return hay.includes('used') || hay.includes('ያገለገለ');
+  return true;
+}
+
+const GOODS_SYNONYM_GROUPS: string[][] = [
+  ['ሶፋ', 'sofa', 'couch', 'sectional'],
+  ['ፍሪጅ', 'fridge', 'refrigerator'],
+  ['ስልክ', 'phone', 'smartphone', 'iphone', 'samsung', 'tecno', 'infinix', 'xiaomi'],
+  ['ላፕቶፕ', 'laptop', 'macbook', 'hp', 'dell', 'lenovo', 'computer', 'pc'],
+  ['ቲቪ', 'ቴሌቪዥን', 'tv', 'television', 'lg', 'hisense', 'sony'],
+  ['አልጋ', 'bed', 'mattress', 'ፍራሽ'],
+  ['ጠረጴዛ', 'table', 'desk'],
+  ['ወንበር', 'chair'],
+  ['ማጠቢያ', 'washer', 'washing'],
+  ['ምድጃ', 'stove', 'oven'],
+  ['ጀነሬተር', 'generator'],
+  ['ሶላር', 'solar', 'inverter'],
+  ['ጫማ', 'shoes', 'sneakers'],
+  ['ሰዓት', 'watch'],
+  ['ብስክሌት', 'bicycle', 'bike'],
+  ['ፓምፕ', 'pump'],
+];
+
+export function matchesGoodsItem(listing: Listing, itemQuery: string): boolean {
+  const raw = itemQuery.trim().toLowerCase();
+  if (!raw) return true;
+  if (listing.category !== 'goods') return false;
+
+  const typeEn = listing.specs?.goodsType
+    ? getGoodsTypeLabel(listing.specs.goodsType, 'en').toLowerCase()
+    : '';
+  const typeAm = listing.specs?.goodsType
+    ? getGoodsTypeLabel(listing.specs.goodsType, 'am').toLowerCase()
+    : '';
+
+  const hay = `${listing.title} ${listing.description} ${listing.specs?.goodsModel || ''} ${
+    listing.specs?.goodsType || ''
+  } ${typeEn} ${typeAm} ${listing.specs?.itemCondition || ''}`.toLowerCase();
+
+  // Split bilingual suggestion format like "Sofa / ሶፋ" into tokens
+  const tokens = raw
+    .split(/[/,]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return tokens.some((tok) => {
+    if (hay.includes(tok)) return true;
+    const group = GOODS_SYNONYM_GROUPS.find((syns) => syns.some((s) => tok.includes(s) || s.includes(tok)));
+    return group ? group.some((syn) => hay.includes(syn)) : false;
+  });
+}
+
 export function matchesListingModel(
   listing: Listing,
   category: 'vehicle' | 'goods',
@@ -166,6 +238,33 @@ export function matchesListingModel(
       : (listing.specs?.goodsModel || '').toLowerCase();
   const hay = `${modelField} ${listing.title} ${listing.description}`.toLowerCase();
   return hay.includes(q);
+}
+
+export function matchesVehicleYear(listing: Listing, yearQuery: string): boolean {
+  const q = yearQuery.trim();
+  if (!q) return true;
+  if (listing.category !== 'vehicle') return false;
+
+  const year = listing.specs?.vehicleYear;
+  const rangeMatch = q.match(/^(\d{4})\s*[-–]\s*(\d{4})$/);
+  if (rangeMatch) {
+    const a = Number(rangeMatch[1]);
+    const b = Number(rangeMatch[2]);
+    const min = Math.min(a, b);
+    const max = Math.max(a, b);
+    return typeof year === 'number' && year >= min && year <= max;
+  }
+
+  const digits = q.replace(/\D/g, '');
+  if (!digits) return true;
+
+  if (typeof year === 'number') {
+    const yearStr = String(year);
+    return digits.length >= 4 ? yearStr === digits.slice(0, 4) : yearStr.startsWith(digits);
+  }
+
+  const hay = `${listing.title} ${listing.description}`;
+  return hay.includes(digits);
 }
 
 export function formatFirestoreUserError(err: unknown, lang: Language): string {

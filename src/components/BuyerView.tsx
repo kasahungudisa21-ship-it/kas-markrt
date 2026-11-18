@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Building,
   Building2,
+  Calendar,
   Car,
   CheckCircle2,
   Home,
@@ -24,17 +25,22 @@ import {
 } from '../firebase';
 import {
   getCategoryLabel,
+  getGoodsConditionLabel,
   getGoodsTypeLabel,
   getRoomClassLabel,
   getTenantPreferenceLabel,
   getTransactionLabel,
   getVehicleTypeLabel,
+  GOODS_CONDITION_KEYS,
+  GOODS_ITEM_SUGGESTIONS,
+  GOODS_MODEL_GROUPS,
   GOODS_MODEL_SUGGESTIONS,
   GOODS_TYPE_KEYS,
   translations,
   VEHICLE_MODEL_GROUPS,
   VEHICLE_MODEL_SUGGESTIONS,
   VEHICLE_TYPE_KEYS,
+  VEHICLE_YEAR_SUGGESTIONS,
 } from '../i18n';
 import {
   BuyerRequest,
@@ -50,9 +56,12 @@ import {
 import {
   formatPrice,
   formatSpecsLine,
+  matchesGoodsCondition,
+  matchesGoodsItem,
   matchesGoodsType,
   matchesListingModel,
   matchesVehicleType,
+  matchesVehicleYear,
 } from '../utils/format';
 import { ListingCard } from './ListingCard';
 
@@ -103,8 +112,11 @@ export function BuyerView({
   const [tenantPrefFilter, setTenantPrefFilter] = useState<'all' | 'late' | 'bale_tedar'>('all');
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string>('all');
   const [vehicleModelFilter, setVehicleModelFilter] = useState<string>('');
+  const [vehicleYearFilter, setVehicleYearFilter] = useState<string>('');
   const [goodsTypeFilter, setGoodsTypeFilter] = useState<string>('all');
   const [goodsModelFilter, setGoodsModelFilter] = useState<string>('');
+  const [goodsItemFilter, setGoodsItemFilter] = useState<string>('');
+  const [goodsConditionFilter, setGoodsConditionFilter] = useState<string>('all');
   const [neighborhood, setNeighborhood] = useState<string>('');
   const [maxBudget, setMaxBudget] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
@@ -175,17 +187,31 @@ export function BuyerView({
     return [...customVehicleModels, ...VEHICLE_MODEL_SUGGESTIONS];
   }, [customVehicleModels]);
 
-  const goodsModelOptions = useMemo(() => {
+  const vehicleYearOptions = useMemo(() => {
+    const years = new Set<string>(VEHICLE_YEAR_SUGGESTIONS);
+    allListings.forEach((item) => {
+      if (item.category === 'vehicle' && typeof item.specs?.vehicleYear === 'number') {
+        years.add(String(item.specs.vehicleYear));
+      }
+    });
+    return Array.from(years).sort((a, b) => Number(b) - Number(a));
+  }, [allListings]);
+
+  const customGoodsModels = useMemo(() => {
+    const known = new Set(GOODS_MODEL_SUGGESTIONS.map((m) => m.toLowerCase()));
     const map = new Map<string, string>();
     allListings.forEach((item) => {
       const m = item.category === 'goods' ? item.specs?.goodsModel?.trim() : '';
-      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
-    });
-    GOODS_MODEL_SUGGESTIONS.forEach((m) => {
-      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+      if (m && !known.has(m.toLowerCase()) && !map.has(m.toLowerCase())) {
+        map.set(m.toLowerCase(), m);
+      }
     });
     return Array.from(map.values());
   }, [allListings]);
+
+  const goodsModelOptions = useMemo(() => {
+    return [...customGoodsModels, ...GOODS_MODEL_SUGGESTIONS];
+  }, [customGoodsModels]);
 
   const matchingListings = useMemo(() => {
     const q = keyword.trim().toLowerCase();
@@ -220,10 +246,13 @@ export function BuyerView({
       if (category === 'vehicle') {
         if (!matchesVehicleType(item, vehicleTypeFilter)) return false;
         if (!matchesListingModel(item, 'vehicle', vehicleModelFilter)) return false;
+        if (!matchesVehicleYear(item, vehicleYearFilter)) return false;
       }
       if (category === 'goods') {
         if (!matchesGoodsType(item, goodsTypeFilter)) return false;
         if (!matchesListingModel(item, 'goods', goodsModelFilter)) return false;
+        if (!matchesGoodsItem(item, goodsItemFilter)) return false;
+        if (!matchesGoodsCondition(item, goodsConditionFilter)) return false;
       }
       const locQ = neighborhood.trim().toLowerCase();
       if (
@@ -237,9 +266,9 @@ export function BuyerView({
       if (q) {
         const hay = `${item.title} ${item.description} ${item.neighborhood} ${item.city} ${
           item.specs?.vehicleType || ''
-        } ${item.specs?.vehicleModel || ''} ${item.specs?.goodsType || ''} ${
-          item.specs?.goodsModel || ''
-        }`.toLowerCase();
+        } ${item.specs?.vehicleModel || ''} ${item.specs?.vehicleYear ?? ''} ${
+          item.specs?.goodsType || ''
+        } ${item.specs?.goodsModel || ''} ${item.specs?.itemCondition || ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
@@ -252,8 +281,11 @@ export function BuyerView({
     tenantPrefFilter,
     vehicleTypeFilter,
     vehicleModelFilter,
+    vehicleYearFilter,
     goodsTypeFilter,
     goodsModelFilter,
+    goodsItemFilter,
+    goodsConditionFilter,
     neighborhood,
     maxBudget,
     keyword,
@@ -492,10 +524,13 @@ export function BuyerView({
                   if (key !== 'vehicle') {
                     setVehicleTypeFilter('all');
                     setVehicleModelFilter('');
+                    setVehicleYearFilter('');
                   }
                   if (key !== 'goods') {
                     setGoodsTypeFilter('all');
                     setGoodsModelFilter('');
+                    setGoodsItemFilter('');
+                    setGoodsConditionFilter('all');
                   }
                 }}
                 className={`p-3 rounded-xl border text-left transition-colors flex flex-col gap-1.5 ${
@@ -660,7 +695,7 @@ export function BuyerView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#1E40AF] mb-1">
                     {t.vehicleModelLabel}
@@ -728,6 +763,59 @@ export function BuyerView({
                     ))}
                   </datalist>
                 </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#1E40AF] mb-1">
+                    {t.vehicleYear}
+                  </label>
+                  <select
+                    aria-label={t.vehicleYear}
+                    value={
+                      vehicleYearOptions.includes(vehicleYearFilter.trim())
+                        ? vehicleYearFilter.trim()
+                        : ''
+                    }
+                    onChange={(e) => setVehicleYearFilter(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-[#BFD6F6] bg-white text-xs font-semibold text-[#142F66] tabular-nums"
+                  >
+                    <option value="">{t.allYears}</option>
+                    {vehicleYearOptions.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-[#1E40AF] mb-1">
+                    {t.searchButton} · {t.vehicleYear}
+                  </label>
+                  <Calendar className="w-3.5 h-3.5 text-[#1E40AF] absolute left-2.5 bottom-2.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    list="buyer-vehicle-years"
+                    maxLength={12}
+                    placeholder={t.vehicleYearFilterPlaceholder}
+                    value={vehicleYearFilter}
+                    onChange={(e) => setVehicleYearFilter(e.target.value)}
+                    className="w-full h-9 pl-8 pr-8 rounded-lg border border-[#BFD6F6] bg-white text-xs tabular-nums text-[#102620]"
+                  />
+                  {vehicleYearFilter && (
+                    <button
+                      type="button"
+                      aria-label="Clear year filter"
+                      onClick={() => setVehicleYearFilter('')}
+                      className="absolute right-2.5 bottom-2 text-[#1E40AF] hover:text-[#142F66]"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <datalist id="buyer-vehicle-years">
+                    {vehicleYearOptions.map((y) => (
+                      <option key={y} value={y} />
+                    ))}
+                  </datalist>
+                </div>
               </div>
             </div>
           </div>
@@ -768,7 +856,7 @@ export function BuyerView({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#9D174D] mb-1">
                     {t.goodsModelLabel}
@@ -788,10 +876,23 @@ export function BuyerView({
                     className="w-full h-9 px-3 rounded-lg border border-[#F3C6DC] bg-white text-xs font-semibold text-[#591432]"
                   >
                     <option value="">{t.allModels}</option>
-                    {goodsModelOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
+                    {customGoodsModels.length > 0 && (
+                      <optgroup label="Listed">
+                        {customGoodsModels.map((m) => (
+                          <option key={`custom-${m}`} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {GOODS_MODEL_GROUPS.map((group) => (
+                      <optgroup key={group.group} label={group.group}>
+                        {group.models.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>
@@ -822,6 +923,53 @@ export function BuyerView({
                       <option key={m} value={m} />
                     ))}
                   </datalist>
+                </div>
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-[#9D174D] mb-1">
+                    {t.goodsNameLabel}
+                  </label>
+                  <Package className="w-3.5 h-3.5 text-[#9D174D] absolute left-2.5 bottom-2.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    list="buyer-goods-items"
+                    placeholder={t.goodsNamePlaceholder}
+                    value={goodsItemFilter}
+                    onChange={(e) => setGoodsItemFilter(e.target.value)}
+                    className="w-full h-9 pl-8 pr-8 rounded-lg border border-[#F3C6DC] bg-white text-xs text-[#102620]"
+                  />
+                  {goodsItemFilter && (
+                    <button
+                      type="button"
+                      aria-label="Clear item filter"
+                      onClick={() => setGoodsItemFilter('')}
+                      className="absolute right-2.5 bottom-2 text-[#9D174D] hover:text-[#591432]"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <datalist id="buyer-goods-items">
+                    {GOODS_ITEM_SUGGESTIONS.map((item) => (
+                      <option key={item} value={item} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#9D174D] mb-1">
+                    {t.condition}
+                  </label>
+                  <select
+                    aria-label={t.condition}
+                    value={goodsConditionFilter}
+                    onChange={(e) => setGoodsConditionFilter(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-[#F3C6DC] bg-white text-xs font-semibold text-[#591432]"
+                  >
+                    <option value="all">{t.allConditions}</option>
+                    {GOODS_CONDITION_KEYS.map((ck) => (
+                      <option key={ck} value={ck}>
+                        {getGoodsConditionLabel(ck, lang)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -930,8 +1078,11 @@ export function BuyerView({
                   setTenantPrefFilter('all');
                   setVehicleTypeFilter('all');
                   setVehicleModelFilter('');
+                  setVehicleYearFilter('');
                   setGoodsTypeFilter('all');
                   setGoodsModelFilter('');
+                  setGoodsItemFilter('');
+                  setGoodsConditionFilter('all');
                   setNeighborhood('');
                   setMaxBudget('');
                   setKeyword('');

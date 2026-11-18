@@ -21,6 +21,7 @@ import {
 import { fetchListingPhotos, fetchListingVideo, placeOrder, sendListingInquiry } from '../firebase';
 import {
   getCategoryLabel,
+  getGoodsConditionLabel,
   getGoodsTypeLabel,
   getRoomClassLabel,
   getStatusLabel,
@@ -237,7 +238,9 @@ export function ListingDetailModal({
   if (s.goodsModel) {
     specRows.push({ label: t.goodsModelLabel, value: s.goodsModel });
   }
-  if (s.itemCondition) specRows.push({ label: t.condition, value: s.itemCondition });
+  if (s.itemCondition) {
+    specRows.push({ label: t.condition, value: getGoodsConditionLabel(s.itemCondition, lang) });
+  }
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

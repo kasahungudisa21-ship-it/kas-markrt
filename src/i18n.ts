@@ -326,8 +326,13 @@ interface Dictionary {
   allVehicleTypes: string;
   allGoodsTypes: string;
   allModels: string;
+  allYears: string;
+  allConditions: string;
   vehicleModelPlaceholder: string;
+  vehicleYearFilterPlaceholder: string;
   goodsModelPlaceholder: string;
+  goodsNameLabel: string;
+  goodsNamePlaceholder: string;
   vehicleNavHeading: string;
   goodsNavHeading: string;
   vehicleTypeSuv: string;
@@ -348,11 +353,21 @@ interface Dictionary {
   vehicleTypeMachinery: string;
   goodsTypeElectronics: string;
   goodsTypePhonesTech: string;
+  goodsTypeComputersOffice: string;
   goodsTypeFurniture: string;
   goodsTypeAppliances: string;
+  goodsTypeSolarPower: string;
   goodsTypeMachineryTools: string;
+  goodsTypeAutoParts: string;
   goodsTypeFashionHome: string;
+  goodsTypeBeautyHealth: string;
+  goodsTypeBabyKids: string;
+  goodsTypeSportsFitness: string;
+  goodsTypeBusinessAgro: string;
   goodsTypeOther: string;
+  conditionNew: string;
+  conditionLikeNew: string;
+  conditionUsed: string;
 }
 
 const en: Dictionary = {
@@ -671,10 +686,15 @@ const en: Dictionary = {
   allVehicleTypes: 'All Vehicle Types',
   allGoodsTypes: 'All Goods Types',
   allModels: 'All Models',
+  allYears: 'All Years',
+  allConditions: 'All Conditions',
   vehicleModelPlaceholder: 'Type or choose model (e.g. Toyota RAV4, Vitz, Hilux...)',
-  goodsModelPlaceholder: 'Type or choose model (e.g. iPhone 15, LG TV, Samsung...)',
-  vehicleNavHeading: 'Vehicle Type & Model Navigation',
-  goodsNavHeading: 'Goods Type & Model Navigation',
+  vehicleYearFilterPlaceholder: 'Type year (e.g. 2022 or 2018-2024)',
+  goodsModelPlaceholder: 'Type or choose model/brand (e.g. iPhone 15, HP, LG TV...)',
+  goodsNameLabel: 'Item / Goods Name',
+  goodsNamePlaceholder: 'Type any item (e.g. Sofa, Fridge, Laptop, TV...)',
+  vehicleNavHeading: 'Vehicle Type, Model & Year Navigation',
+  goodsNavHeading: 'Goods Type, Model & Condition Navigation',
   vehicleTypeSuv: 'SUV / 4x4',
   vehicleTypeSedan: 'Sedan',
   vehicleTypeCompact: 'Compact / Hatchback',
@@ -691,13 +711,23 @@ const en: Dictionary = {
   vehicleTypeConvertible: 'Convertible',
   vehicleTypeMotorcycle: 'Motorcycle / Bajaj',
   vehicleTypeMachinery: 'Heavy Machinery',
-  goodsTypeElectronics: 'Electronics & TV',
-  goodsTypePhonesTech: 'Phones & Computers',
-  goodsTypeFurniture: 'Furniture',
-  goodsTypeAppliances: 'Home Appliances',
+  goodsTypeElectronics: 'TV, Audio & Gaming',
+  goodsTypePhonesTech: 'Phones & Tablets',
+  goodsTypeComputersOffice: 'Laptops & Office Tech',
+  goodsTypeFurniture: 'Furniture & Decor',
+  goodsTypeAppliances: 'Home & Kitchen Appliances',
+  goodsTypeSolarPower: 'Solar, UPS & Generators',
   goodsTypeMachineryTools: 'Machinery & Tools',
-  goodsTypeFashionHome: 'Fashion & Living',
+  goodsTypeAutoParts: 'Auto Parts & Accessories',
+  goodsTypeFashionHome: 'Fashion, Shoes & Watches',
+  goodsTypeBeautyHealth: 'Beauty & Personal Care',
+  goodsTypeBabyKids: 'Baby & Kids Items',
+  goodsTypeSportsFitness: 'Sports & Fitness',
+  goodsTypeBusinessAgro: 'Shop & Agro Equipment',
   goodsTypeOther: 'Other Goods',
+  conditionNew: 'Brand New',
+  conditionLikeNew: 'Like New',
+  conditionUsed: 'Used - Good',
 };
 
 const am: Dictionary = {
@@ -792,7 +822,7 @@ const am: Dictionary = {
   bathrooms: 'መታጠቢያ',
   areaSqm: 'ስፋት',
   titleDeed: 'ካርታ / ሰነድ',
-  vehicleYear: 'የተመረተበት ዓመት',
+  vehicleYear: 'የተመረተበት ዓመተ ምህረት',
   mileageKm: 'የሄደበት ኪ.ሜ',
   transmission: 'ማርሽ',
   fuelType: 'ነዳጅ',
@@ -1016,10 +1046,15 @@ const am: Dictionary = {
   allVehicleTypes: 'ሁሉም የመኪና ዓይነቶች',
   allGoodsTypes: 'ሁሉም የዕቃ ዓይነቶች',
   allModels: 'ሁሉም ሞዴሎች',
+  allYears: 'ሁሉም ዓመታት',
+  allConditions: 'ሁሉም ሁኔታዎች',
   vehicleModelPlaceholder: 'ሞዴል ይምረጡ ወይም ይጻፉ (ለምሳሌ፡ RAV4, Vitz, Hilux...)',
-  goodsModelPlaceholder: 'ሞዴል / ብራንድ ይምረጡ ወይም ይጻፉ (ለምሳሌ፡ iPhone, Samsung, LG...)',
-  vehicleNavHeading: 'የመኪና ዓይነት (Type) እና ሞዴል (Model) መምረጫ',
-  goodsNavHeading: 'የዕቃ ዓይነት (Type) እና ሞዴል (Model) መምረጫ',
+  vehicleYearFilterPlaceholder: 'የተመረተበት ዓ.ም ይጻፉ (ለምሳሌ፡ 2022)',
+  goodsModelPlaceholder: 'ሞዴል / ብራንድ ይምረጡ ወይም ይጻፉ (ለምሳሌ፡ iPhone, HP, LG...)',
+  goodsNameLabel: 'የዕቃ ስም መጻፊያ',
+  goodsNamePlaceholder: 'የሚፈልጉትን ዕቃ ይጻፉ (ለምሳሌ፡ ሶፋ፣ ፍሪጅ፣ ላፕቶፕ፣ ስልክ...)',
+  vehicleNavHeading: 'የመኪና ዓይነት፣ ሞዴል እና የተመረተበት ዓ.ም መምረጫ',
+  goodsNavHeading: 'የዕቃ ዓይነት፣ ሞዴል እና ሁኔታ መምረጫ',
   vehicleTypeSuv: 'SUV / 4x4',
   vehicleTypeSedan: 'ሴዳን (Sedan)',
   vehicleTypeCompact: 'ኮምፓክት / ቪትዝ (Hatchback)',
@@ -1036,13 +1071,23 @@ const am: Dictionary = {
   vehicleTypeConvertible: 'ኮንቨርቲብል',
   vehicleTypeMotorcycle: 'ሞተር ሳይክል / ባጃጅ',
   vehicleTypeMachinery: 'የግንባታ ማሽነሪ',
-  goodsTypeElectronics: 'ኤሌክትሮኒክስ እና ቲቪ',
-  goodsTypePhonesTech: 'ስልክ እና ኮምፒውተር',
-  goodsTypeFurniture: 'የቤት ዕቃ (ፈርኒቸር)',
-  goodsTypeAppliances: 'የቤት ውስጥ መገልገያዎች',
+  goodsTypeElectronics: 'ቲቪ፣ ድምጽ እና ጌም',
+  goodsTypePhonesTech: 'ስልክ እና ታብሌት',
+  goodsTypeComputersOffice: 'ላፕቶፕ እና የቢሮ ቴክ',
+  goodsTypeFurniture: 'ፈርኒቸር እና ማስዋቢያ',
+  goodsTypeAppliances: 'የቤት እና የኩሽና ዕቃዎች',
+  goodsTypeSolarPower: 'ሶላር፣ UPS እና ጀነሬተር',
   goodsTypeMachineryTools: 'ማሽነሪ እና መሳሪያዎች',
-  goodsTypeFashionHome: 'ልብስ እና የውበት ዕቃ',
+  goodsTypeAutoParts: 'የመኪና መለዋወጫዎች',
+  goodsTypeFashionHome: 'ልብስ፣ ጫማ እና ሰዓት',
+  goodsTypeBeautyHealth: 'ውበት እና የግል ንጽህና',
+  goodsTypeBabyKids: 'የህጻናት ዕቃዎች',
+  goodsTypeSportsFitness: 'ስፖርት እና ጂም',
+  goodsTypeBusinessAgro: 'የንግድ እና የእርሻ ዕቃዎች',
   goodsTypeOther: 'ሌሎች ዕቃዎች',
+  conditionNew: 'አዲስ (Brand New)',
+  conditionLikeNew: 'እንደ አዲስ (Like New)',
+  conditionUsed: 'ያገለገለ (Used)',
 };
 
 export const translations: Record<Language, Dictionary> = { en, am };
@@ -1191,14 +1236,23 @@ export const VEHICLE_TYPE_KEYS: VehicleType[] = [
 ];
 
 export const GOODS_TYPE_KEYS: GoodsType[] = [
-  'electronics',
   'phones_tech',
-  'furniture',
+  'computers_office',
+  'electronics',
   'appliances',
+  'furniture',
+  'solar_power',
   'machinery_tools',
+  'auto_parts',
   'fashion_home',
+  'beauty_health',
+  'baby_kids',
+  'sports_fitness',
+  'business_agro',
   'other',
 ];
+
+export const GOODS_CONDITION_KEYS = ['Brand New', 'Like New', 'Gently Used'] as const;
 
 export const VEHICLE_MODEL_GROUPS: { brand: string; models: string[] }[] = [
   {
@@ -1409,17 +1463,163 @@ export const VEHICLE_MODEL_SUGGESTIONS: string[] = VEHICLE_MODEL_GROUPS.flatMap(
   (group) => group.models
 );
 
-export const GOODS_MODEL_SUGGESTIONS: string[] = [
-  'iPhone 15 Pro',
-  'Samsung Galaxy S24',
-  'MacBook Pro',
-  'HP EliteBook',
-  'LG Smart TV',
-  'Samsung Fridge',
-  'Hisense Washer',
-  'Espresso Machine',
-  'Walnut Sofa Set',
-  'Office Desk & Chair',
+export const VEHICLE_YEAR_SUGGESTIONS: string[] = Array.from(
+  { length: 37 },
+  (_, idx) => String(2026 - idx)
+);
+
+export const GOODS_MODEL_GROUPS: { group: string; models: string[] }[] = [
+  {
+    group: 'Apple & Samsung Mobile',
+    models: [
+      'iPhone 16 Pro Max',
+      'iPhone 15 Pro',
+      'iPhone 15',
+      'iPhone 14 Pro',
+      'iPhone 13',
+      'iPhone 12',
+      'iPhone 11',
+      'iPad Pro / Air',
+      'Apple Watch Ultra / Series',
+      'Samsung Galaxy S24 Ultra',
+      'Samsung Galaxy S23',
+      'Samsung Galaxy A55',
+      'Samsung Galaxy A35',
+      'Samsung Galaxy A15',
+      'Samsung Galaxy Z Fold / Flip',
+      'Samsung Galaxy Tab S9',
+    ],
+  },
+  {
+    group: 'Xiaomi, Tecno, Infinix & Pixel',
+    models: [
+      'Xiaomi Redmi Note 13',
+      'Xiaomi 14 / Poco',
+      'Tecno Camon 30',
+      'Tecno Spark 20',
+      'Tecno Phantom V',
+      'Infinix Note 40',
+      'Infinix Hot 40',
+      'Google Pixel 8 / 9',
+      'Huawei Pura / Mate',
+    ],
+  },
+  {
+    group: 'Laptops, PCs & Office',
+    models: [
+      'MacBook Pro M3 / M2',
+      'MacBook Air M2 / M1',
+      'HP EliteBook',
+      'HP ProBook',
+      'HP Pavilion / Envy',
+      'Dell XPS 13 / 15',
+      'Dell Latitude',
+      'Lenovo ThinkPad',
+      'Lenovo IdeaPad / Legion',
+      'Asus ROG / ZenBook',
+      'Acer Aspire / Nitro',
+      'Desktop Gaming / Workstation PC',
+      'Canon / Epson Printer',
+      'Starlink Router / Wi-Fi 6',
+    ],
+  },
+  {
+    group: 'TV, Audio & Gaming',
+    models: [
+      'LG OLED / 4K Smart TV',
+      'Samsung QLED / Crystal TV',
+      'Hisense 4K Smart TV',
+      'Sony Bravia TV',
+      'TCL Smart TV',
+      'PlayStation 5 (PS5)',
+      'PlayStation 4 Pro',
+      'Xbox Series X / S',
+      'JBL PartyBox / Boombox',
+      'Sony / Bose Soundbar',
+      'Canon / Sony Camera',
+    ],
+  },
+  {
+    group: 'Fridges, Washers & Kitchen',
+    models: [
+      'Samsung Fridge',
+      'LG Inverter Fridge',
+      'Hisense Refrigerator',
+      'Beko / Bosch Fridge',
+      'Hisense Washer',
+      'LG Front-Load Washer',
+      'Samsung EcoBubble Washer',
+      'Bosch Dishwasher',
+      'Espresso Machine',
+      'Air Fryer & Microwave',
+      'Gas & Electric Stove',
+      'Water Dispenser',
+    ],
+  },
+  {
+    group: 'Furniture & Decor',
+    models: [
+      'Walnut Sofa Set',
+      'L-Shape Sectional Sofa',
+      'King / Queen Bed & Mattress',
+      'Dining Table Set (6-8 Seat)',
+      'Office Desk & Chair',
+      'Wardrobe / Closet',
+      'TV Stand & Coffee Table',
+      'Turkish Carpet / Rug',
+    ],
+  },
+  {
+    group: 'Solar, Power & Tools',
+    models: [
+      'Solar Panel & Inverter Kit',
+      'EcoFlow / Anker Power Station',
+      'Diesel / Petrol Generator',
+      'UPS / Voltage Stabilizer',
+      'Bosch Drill & Angle Grinder',
+      'Welding & Air Compressor',
+      'Submersible Water Pump',
+    ],
+  },
+  {
+    group: 'Auto Parts, Sports, Fashion & More',
+    models: [
+      'Car Tires & Alloy Rims',
+      'Android Car Screen & Dashcam',
+      'Car Battery & Spare Parts',
+      'Treadmill & Home Gym Set',
+      'Mountain / Road Bicycle',
+      'Nike / Adidas Sneakers',
+      'Designer Watch & Perfume',
+      'Baby Stroller & Crib',
+      'Commercial Bakery / Cafe Machine',
+    ],
+  },
+];
+
+export const GOODS_MODEL_SUGGESTIONS: string[] = GOODS_MODEL_GROUPS.flatMap(
+  (item) => item.models
+);
+
+export const GOODS_ITEM_SUGGESTIONS: string[] = [
+  'Sofa / ሶፋ',
+  'Bed & Mattress / አልጋ',
+  'Dining Table / የምግብ ጠረጴዛ',
+  'Office Desk & Chair / የቢሮ ጠረጴዛ',
+  'Refrigerator / ፍሪጅ',
+  'Washing Machine / የልብስ ማጠቢያ',
+  'Smart TV / ቴሌቪዥን',
+  'Laptop / ላፕቶፕ',
+  'Smartphone / ስልክ',
+  'Generator / ጀነሬተር',
+  'Solar Panel & Inverter / ሶላር',
+  'Gas & Electric Stove / ምድጃ',
+  'Espresso Machine / የቡና ማሽን',
+  'PlayStation 5',
+  'Sneakers / ጫማ',
+  'Treadmill / የስፖርት መሮጫ',
+  'Water Pump / የውሃ ፓምፕ',
+  'Baby Stroller / የህጻን ጋሪ',
 ];
 
 export function getVehicleTypeLabel(value: string, lang: Language): string {
@@ -1469,19 +1669,42 @@ export function getGoodsTypeLabel(value: string, lang: Language): string {
       return t.goodsTypeElectronics;
     case 'phones_tech':
       return t.goodsTypePhonesTech;
+    case 'computers_office':
+      return t.goodsTypeComputersOffice;
     case 'furniture':
       return t.goodsTypeFurniture;
     case 'appliances':
       return t.goodsTypeAppliances;
+    case 'solar_power':
+      return t.goodsTypeSolarPower;
     case 'machinery_tools':
       return t.goodsTypeMachineryTools;
+    case 'auto_parts':
+      return t.goodsTypeAutoParts;
     case 'fashion_home':
       return t.goodsTypeFashionHome;
+    case 'beauty_health':
+      return t.goodsTypeBeautyHealth;
+    case 'baby_kids':
+      return t.goodsTypeBabyKids;
+    case 'sports_fitness':
+      return t.goodsTypeSportsFitness;
+    case 'business_agro':
+      return t.goodsTypeBusinessAgro;
     case 'other':
       return t.goodsTypeOther;
     default:
       return value;
   }
+}
+
+export function getGoodsConditionLabel(value: string, lang: Language): string {
+  const t = translations[lang];
+  const lower = value.trim().toLowerCase();
+  if (lower === 'brand new' || lower === 'new') return t.conditionNew;
+  if (lower === 'like new') return t.conditionLikeNew;
+  if (lower.includes('used')) return t.conditionUsed;
+  return value;
 }
 
 
