@@ -368,6 +368,28 @@ interface Dictionary {
   conditionNew: string;
   conditionLikeNew: string;
   conditionUsed: string;
+  termsLink: string;
+  privacyLink: string;
+  legalAgreePrefix: string;
+  legalAgreeAnd: string;
+  legalAgreeSuffix: string;
+  legalMustAcceptError: string;
+  installAppButton: string;
+  installAppShort: string;
+  installModalTitle: string;
+  installModalSubtitle: string;
+  installNowButton: string;
+  installOpenBrowser: string;
+  installIframeNote: string;
+  installAndroidTitle: string;
+  installAndroidSteps: string;
+  installIOSTitle: string;
+  installIOSSteps: string;
+  installDesktopTitle: string;
+  installDesktopSteps: string;
+  installBenefitsNote: string;
+  offlineBanner: string;
+  closeLabel: string;
 }
 
 const en: Dictionary = {
@@ -728,6 +750,28 @@ const en: Dictionary = {
   conditionNew: 'Brand New',
   conditionLikeNew: 'Like New',
   conditionUsed: 'Used - Good',
+  termsLink: 'Terms & Rules',
+  privacyLink: 'Privacy Policy',
+  legalAgreePrefix: 'I confirm all details are accurate and agree to the Kas Market',
+  legalAgreeAnd: 'and',
+  legalAgreeSuffix: '',
+  legalMustAcceptError: 'Please check the box to accept Kas Market Terms & Rules and Privacy Policy before submitting.',
+  installAppButton: 'Download App',
+  installAppShort: 'Get App',
+  installModalTitle: 'Download Kas Market App',
+  installModalSubtitle: 'Install directly to your phone or computer — no app store needed',
+  installNowButton: 'Install Kas Market Now',
+  installOpenBrowser: 'Open Direct Install Page',
+  installIframeNote: 'You are viewing Kas Market inside an embedded frame. Open the direct website link in your browser to install it onto your home screen.',
+  installAndroidTitle: 'Android (Chrome / Edge / Samsung)',
+  installAndroidSteps: 'Tap the browser menu (⋮) in the top right, then select "Install app" or "Add to Home screen".',
+  installIOSTitle: 'iPhone & iPad (Safari)',
+  installIOSSteps: 'Tap the Share icon at the bottom of Safari, scroll down, and tap "Add to Home Screen".',
+  installDesktopTitle: 'Computer (Chrome / Edge)',
+  installDesktopSteps: 'Click the Install icon on the right side of the browser address bar and confirm "Install".',
+  installBenefitsNote: 'Opens in full-screen app mode, loads faster, and keeps cached listings viewable even when offline.',
+  offlineBanner: 'Offline Mode — Showing cached marketplace data.',
+  closeLabel: 'Close',
 };
 
 const am: Dictionary = {
@@ -1088,6 +1132,28 @@ const am: Dictionary = {
   conditionNew: 'አዲስ (Brand New)',
   conditionLikeNew: 'እንደ አዲስ (Like New)',
   conditionUsed: 'ያገለገለ (Used)',
+  termsLink: 'ሕግ እና ደንብ',
+  privacyLink: 'የግላዊነት ፖሊሲ',
+  legalAgreePrefix: 'መረጃው ትክክለኛ መሆኑን አረጋግጣለሁ፤ እንዲሁም የ Kas Market',
+  legalAgreeAnd: 'እና',
+  legalAgreeSuffix: 'እቀበላለሁ።',
+  legalMustAcceptError: 'ከመቀጠልዎ በፊት እባክዎ የ Kas Market ሕግ እና ደንብ እንዲሁም የግላዊነት ፖሊሲን ይስማሙ።',
+  installAppButton: 'አፕሊኬሽን አውርድ',
+  installAppShort: 'አፕ አውርድ',
+  installModalTitle: 'የ Kas Market አፕሊኬሽን ያውርዱ',
+  installModalSubtitle: 'ያለ App Store ወይም Play Store በቀጥታ ስልክዎ ወይም ኮምፒውተርዎ ላይ ይጫኑ',
+  installNowButton: 'አፑን አሁን ጫን',
+  installOpenBrowser: 'ቀጥታ መጫኛ ገጽ ክፈት',
+  installIframeNote: 'ዌብሳይቱን እያዩ ያሉት በተከተተ መስኮት ውስጥ ነው። አፑን በስልክዎ ላይ ለመጫን ከታች ባለው ቁልፍ በብራውዘር በቀጥታ ይክፈቱት።',
+  installAndroidTitle: 'አንድሮይድ (Android — Chrome / Edge)',
+  installAndroidSteps: 'ከላይ በቀኝ በኩል ያለውን የብራውዘር ምናሌ (⋮) ይንኩ፣ ከዚያ "Install app" ወይም "Add to Home screen" የሚለውን ይምረጡ።',
+  installIOSTitle: 'አይፎን እና አይፓድ (iPhone / Safari)',
+  installIOSSteps: 'በSafari ታችኛው ክፍል ያለውን የ Share ምልክት ይንኩ፣ ወደ ታች ይውረዱና "Add to Home Screen" የሚለውን ይምረጡ።',
+  installDesktopTitle: 'ኮምፒውተር (Chrome / Edge)',
+  installDesktopSteps: 'በአድራሻ መጻፊያው (Address Bar) በቀኝ ጫፍ ላይ የሚታየውን የInstall ምልክት ይጫኑ።',
+  installBenefitsNote: 'እንደ ሙሉ አፕሊኬሽን ይከፈታል፣ በፍጥነት ይሰራል፣ እንዲሁም ኢንተርኔት በሚቋረጥበት ጊዜ የተቀመጡ መረጃዎችን ያሳያል።',
+  offlineBanner: 'ኢንተርኔት የለም — የተቀመጠ መረጃ እየታየ ነው።',
+  closeLabel: 'ዝጋ',
 };
 
 export const translations: Record<Language, Dictionary> = { en, am };

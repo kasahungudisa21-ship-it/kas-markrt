@@ -64,6 +64,7 @@ interface SellViewProps {
   onGoToOrders: () => void;
   onSignIn: () => void;
   onSignOut?: () => void;
+  onOpenLegal?: (tab: 'terms' | 'privacy') => void;
 }
 
 export function SellView({
@@ -77,6 +78,7 @@ export function SellView({
   onGoToOrders,
   onSignIn,
   onSignOut,
+  onOpenLegal,
 }: SellViewProps) {
   const t = translations[lang];
 
@@ -96,6 +98,7 @@ export function SellView({
   const [city, setCity] = useState('Addis Ababa');
   const [sellerPhone, setSellerPhone] = useState(savedPhone);
   const [photoSlots, setPhotoSlots] = useState<PhotoSlotsState>(() => createEmptyPhotoSlots());
+  const [agreedLegal, setAgreedLegal] = useState(false);
 
   useEffect(() => {
     if (savedPhone && !sellerPhone) {
@@ -277,6 +280,10 @@ export function SellView({
       setErrorMsg(t.photoRequiredError);
       return;
     }
+    if (!agreedLegal) {
+      setErrorMsg(t.legalMustAcceptError);
+      return;
+    }
 
     setErrorMsg('');
     setSubmitting(true);
@@ -313,6 +320,7 @@ export function SellView({
       setVideoMimeType('');
       setVideoDurationSec(0);
       setPhotoSlots(createEmptyPhotoSlots());
+      setAgreedLegal(false);
       setPublishedSuccess(true);
     } catch (err) {
       setErrorMsg(formatFirestoreUserError(err, lang));
@@ -1046,6 +1054,47 @@ export function SellView({
                   }}
                 />
               </div>
+
+              <label className="flex items-start gap-2.5 p-3 rounded-lg border border-[#E6DED0] bg-[#FAF7F0] text-xs text-[#2F423B] leading-relaxed cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedLegal}
+                  onChange={(e) => {
+                    setAgreedLegal(e.target.checked);
+                    if (e.target.checked && errorMsg === t.legalMustAcceptError) {
+                      setErrorMsg('');
+                    }
+                  }}
+                  className="mt-0.5 h-4 w-4 rounded border-[#CEC5B3] text-[#0F4C3A] focus:ring-[#0F4C3A] shrink-0"
+                />
+                <span>
+                  {t.legalAgreePrefix}{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onOpenLegal?.('terms');
+                    }}
+                    className="font-semibold text-[#0F4C3A] underline underline-offset-2 hover:text-[#0B3B2D]"
+                  >
+                    {t.termsLink}
+                  </button>{' '}
+                  {t.legalAgreeAnd}{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onOpenLegal?.('privacy');
+                    }}
+                    className="font-semibold text-[#0F4C3A] underline underline-offset-2 hover:text-[#0B3B2D]"
+                  >
+                    {t.privacyLink}
+                  </button>
+                  {t.legalAgreeSuffix ? ` ${t.legalAgreeSuffix}` : '.'}
+                </span>
+              </label>
 
               {errorMsg && (
                 <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-xs text-red-800 leading-relaxed">

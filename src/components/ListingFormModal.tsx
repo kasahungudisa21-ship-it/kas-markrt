@@ -46,6 +46,7 @@ interface ListingFormModalProps {
   onClose: () => void;
   onRequireSignIn: () => void;
   onSuccess: () => void;
+  onOpenLegal?: (tab: 'terms' | 'privacy') => void;
 }
 
 export function ListingFormModal({
@@ -57,6 +58,7 @@ export function ListingFormModal({
   onClose,
   onRequireSignIn,
   onSuccess,
+  onOpenLegal,
 }: ListingFormModalProps) {
   const t = translations[lang];
 
@@ -96,11 +98,13 @@ export function ListingFormModal({
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [agreedLegal, setAgreedLegal] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
     if (savedPhone) setSellerPhone(savedPhone);
     if (editingListing) {
+      setAgreedLegal(true);
       setCategory(editingListing.category);
       setTransactionType(editingListing.transactionType);
       setTitle(editingListing.title);
@@ -208,6 +212,7 @@ export function ListingFormModal({
       setCity('Addis Ababa');
       setPhotoSlots(createEmptyPhotoSlots());
       setErrorMsg('');
+      setAgreedLegal(false);
     }
   }, [isOpen, editingListing, savedPhone]);
 
@@ -303,6 +308,11 @@ export function ListingFormModal({
       if (goodsType.trim()) specs.goodsType = goodsType.trim();
       if (goodsModel.trim()) specs.goodsModel = goodsModel.trim();
       specs.itemCondition = itemCondition.trim();
+    }
+
+    if (!agreedLegal) {
+      setErrorMsg(t.legalMustAcceptError);
+      return;
     }
 
     setErrorMsg('');
@@ -926,6 +936,47 @@ export function ListingFormModal({
                 }}
               />
             </div>
+
+            <label className="flex items-start gap-2.5 p-3 rounded-lg border border-zinc-200 bg-zinc-50 text-xs text-zinc-700 leading-relaxed cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreedLegal}
+                onChange={(e) => {
+                  setAgreedLegal(e.target.checked);
+                  if (e.target.checked && errorMsg === t.legalMustAcceptError) {
+                    setErrorMsg('');
+                  }
+                }}
+                className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-emerald-800 focus:ring-emerald-700 shrink-0"
+              />
+              <span>
+                {t.legalAgreePrefix}{' '}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onOpenLegal?.('terms');
+                  }}
+                  className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                >
+                  {t.termsLink}
+                </button>{' '}
+                {t.legalAgreeAnd}{' '}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onOpenLegal?.('privacy');
+                  }}
+                  className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                >
+                  {t.privacyLink}
+                </button>
+                {t.legalAgreeSuffix ? ` ${t.legalAgreeSuffix}` : '.'}
+              </span>
+            </label>
 
             {errorMsg && <p className="text-xs text-red-700">{errorMsg}</p>}
 

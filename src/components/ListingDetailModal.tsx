@@ -47,6 +47,7 @@ interface ListingDetailModalProps {
   onDeleteListing?: (listing: Listing) => Promise<void> | void;
   onRequireSignIn: () => void;
   onViewOrders: () => void;
+  onOpenLegal?: (tab: 'terms' | 'privacy') => void;
 }
 
 export function ListingDetailModal({
@@ -62,6 +63,7 @@ export function ListingDetailModal({
   onDeleteListing,
   onRequireSignIn,
   onViewOrders,
+  onOpenLegal,
 }: ListingDetailModalProps) {
   const t = translations[lang];
   const [activeTab, setActiveTab] = useState<'order' | 'message'>(initialTab);
@@ -76,6 +78,7 @@ export function ListingDetailModal({
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [confirmedOrderNumber, setConfirmedOrderNumber] = useState<string | null>(null);
   const [orderError, setOrderError] = useState('');
+  const [agreedOrderLegal, setAgreedOrderLegal] = useState(false);
 
   // Message form state
   const [senderName, setSenderName] = useState(user?.displayName || '');
@@ -84,6 +87,7 @@ export function ListingDetailModal({
   const [msgSubmitting, setMsgSubmitting] = useState(false);
   const [msgSentSuccess, setMsgSentSuccess] = useState(false);
   const [msgError, setMsgError] = useState('');
+  const [agreedMsgLegal, setAgreedMsgLegal] = useState(false);
 
   // Multi-angle gallery & video state
   const [galleryPhotos, setGalleryPhotos] = useState<ListingPhoto[]>([]);
@@ -97,8 +101,10 @@ export function ListingDetailModal({
     setQuantity(1);
     setConfirmedOrderNumber(null);
     setOrderError('');
+    setAgreedOrderLegal(false);
     setMsgSentSuccess(false);
     setMsgError('');
+    setAgreedMsgLegal(false);
     setActivePhotoIdx(0);
     setVideoSrc(null);
     setVideoLoading(false);
@@ -264,6 +270,10 @@ export function ListingDetailModal({
       );
       return;
     }
+    if (!agreedOrderLegal) {
+      setOrderError(t.legalMustAcceptError);
+      return;
+    }
 
     setOrderError('');
     setOrderSubmitting(true);
@@ -279,6 +289,7 @@ export function ListingDetailModal({
       });
       setConfirmedOrderNumber(result.orderNumber);
       setOrderNotes('');
+      setAgreedOrderLegal(false);
     } catch (err) {
       setOrderError(err instanceof Error ? err.message : 'Unable to place order.');
     } finally {
@@ -308,6 +319,10 @@ export function ListingDetailModal({
       );
       return;
     }
+    if (!agreedMsgLegal) {
+      setMsgError(t.legalMustAcceptError);
+      return;
+    }
 
     setMsgError('');
     setMsgSubmitting(true);
@@ -315,6 +330,7 @@ export function ListingDetailModal({
       await sendListingInquiry(user, listing, cleanName, cleanContact, cleanMessage);
       setMsgSentSuccess(true);
       setMessage('');
+      setAgreedMsgLegal(false);
     } catch (err) {
       setMsgError(err instanceof Error ? err.message : 'Unable to send message.');
     } finally {
@@ -769,6 +785,47 @@ export function ListingDetailModal({
                         </span>
                       </div>
 
+                      <label className="flex items-start gap-2 p-2.5 rounded-lg border border-zinc-200 bg-white text-[11px] text-zinc-700 leading-relaxed cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={agreedOrderLegal}
+                          onChange={(e) => {
+                            setAgreedOrderLegal(e.target.checked);
+                            if (e.target.checked && orderError === t.legalMustAcceptError) {
+                              setOrderError('');
+                            }
+                          }}
+                          className="mt-0.5 h-3.5 w-3.5 rounded border-zinc-300 text-emerald-800 focus:ring-emerald-700 shrink-0"
+                        />
+                        <span>
+                          {t.legalAgreePrefix}{' '}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onOpenLegal?.('terms');
+                            }}
+                            className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                          >
+                            {t.termsLink}
+                          </button>{' '}
+                          {t.legalAgreeAnd}{' '}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onOpenLegal?.('privacy');
+                            }}
+                            className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                          >
+                            {t.privacyLink}
+                          </button>
+                          {t.legalAgreeSuffix ? ` ${t.legalAgreeSuffix}` : '.'}
+                        </span>
+                      </label>
+
                       {orderError && <p className="text-xs text-red-700">{orderError}</p>}
 
                       <button
@@ -844,6 +901,47 @@ export function ListingDetailModal({
                         className="w-full p-3 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900"
                       />
                     </div>
+
+                    <label className="flex items-start gap-2 p-2.5 rounded-lg border border-zinc-200 bg-white text-[11px] text-zinc-700 leading-relaxed cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreedMsgLegal}
+                        onChange={(e) => {
+                          setAgreedMsgLegal(e.target.checked);
+                          if (e.target.checked && msgError === t.legalMustAcceptError) {
+                            setMsgError('');
+                          }
+                        }}
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-zinc-300 text-emerald-800 focus:ring-emerald-700 shrink-0"
+                      />
+                      <span>
+                        {t.legalAgreePrefix}{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onOpenLegal?.('terms');
+                          }}
+                          className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                        >
+                          {t.termsLink}
+                        </button>{' '}
+                        {t.legalAgreeAnd}{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onOpenLegal?.('privacy');
+                          }}
+                          className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                        >
+                          {t.privacyLink}
+                        </button>
+                        {t.legalAgreeSuffix ? ` ${t.legalAgreeSuffix}` : '.'}
+                      </span>
+                    </label>
 
                     {msgError && <p className="text-xs text-red-700">{msgError}</p>}
 

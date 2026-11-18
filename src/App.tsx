@@ -5,10 +5,13 @@ import { BuyerView } from './components/BuyerView';
 import { ConnectionsTab, ConnectionsView } from './components/ConnectionsView';
 import { DashboardTheme, DashboardView } from './components/DashboardView';
 import { KasLogo } from './components/KasLogo';
+import { LegalModal, LegalTab } from './components/LegalModal';
 import { ListingCard } from './components/ListingCard';
 import { ListingDetailModal } from './components/ListingDetailModal';
 import { ListingFormModal } from './components/ListingFormModal';
 import { Navbar, NavSection } from './components/Navbar';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import { ResilientImage } from './components/ResilientImage';
 import { SellView } from './components/SellView';
 import { HERO_IMAGE, NEIGHBORHOOD_OPTIONS } from './data/showcaseListings';
@@ -122,6 +125,13 @@ export default function App() {
   const [selectedInitialTab, setSelectedInitialTab] = useState<'order' | 'message'>('order');
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('terms');
+
+  const openLegalModal = (tab: LegalTab = 'terms') => {
+    setLegalModalTab(tab);
+    setLegalModalOpen(true);
+  };
 
   const t = translations[lang];
 
@@ -716,6 +726,7 @@ export default function App() {
             onToggleSave={handleToggleSave}
             onSignIn={handleSignIn}
             onSignOut={handleSignOut}
+            onOpenLegal={openLegalModal}
           />
         ) : activeNav === 'sell' ? (
           <SellView
@@ -732,6 +743,7 @@ export default function App() {
             }}
             onSignIn={handleSignIn}
             onSignOut={handleSignOut}
+            onOpenLegal={openLegalModal}
           />
         ) : activeNav === 'connections' ? (
           <ConnectionsView
@@ -778,7 +790,8 @@ export default function App() {
                         <span className="text-xs font-semibold text-amber-300/95 tracking-wide">
                           {t.heroLocationCaption}
                         </span>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
+                          <PWAInstallButton lang={lang} variant="hero" />
                           <button
                             type="button"
                             onClick={() => setLang((prev) => (prev === 'en' ? 'am' : 'en'))}
@@ -1727,6 +1740,21 @@ export default function App() {
             >
               {t.navConnections}
             </button>
+            <button
+              type="button"
+              onClick={() => openLegalModal('terms')}
+              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
+            >
+              {t.termsLink}
+            </button>
+            <button
+              type="button"
+              onClick={() => openLegalModal('privacy')}
+              className={isDash ? 'hover:text-white transition-colors' : 'hover:text-amber-300 transition-colors'}
+            >
+              {t.privacyLink}
+            </button>
+            <PWAInstallButton lang={lang} variant="footer" isDash={isDash} />
             {user ? (
               <button
                 type="button"
@@ -1764,6 +1792,7 @@ export default function App() {
           setConnectionsRequestedTab(isAdmin ? 'orders' : 'listings');
           setActiveNav('connections');
         }}
+        onOpenLegal={openLegalModal}
       />
 
       <ListingFormModal
@@ -1780,6 +1809,14 @@ export default function App() {
         onSuccess={() => {
           setActiveNav('explore');
         }}
+        onOpenLegal={openLegalModal}
+      />
+
+      <LegalModal
+        isOpen={legalModalOpen}
+        initialTab={legalModalTab}
+        lang={lang}
+        onClose={() => setLegalModalOpen(false)}
       />
 
       {activeToasts.length > 0 && (
@@ -1842,6 +1879,7 @@ export default function App() {
           ))}
         </div>
       )}
+      <OfflineIndicator lang={lang} />
     </div>
   );
 }

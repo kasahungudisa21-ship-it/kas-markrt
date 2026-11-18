@@ -5,6 +5,7 @@ import { translations } from '../i18n';
 import { Language, TransactionType } from '../types';
 import { DashboardTheme } from './DashboardView';
 import { KasLogo } from './KasLogo';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export type NavSection =
   | 'explore'
@@ -250,6 +251,8 @@ export function Navbar({
             <span>{t.navSell}</span>
           </button>
 
+          <PWAInstallButton lang={lang} variant="navbar" isDash={isDash} />
+
           <button
             type="button"
             onClick={() => setMobileOpen((prev) => !prev)}
@@ -357,6 +360,14 @@ export function Navbar({
               </button>
             );
           })}
+          <div className="pt-2.5 pb-1.5 px-3">
+            <PWAInstallButton
+              lang={lang}
+              variant="drawer"
+              isDash={isDash}
+              onAfterAction={() => setMobileOpen(false)}
+            />
+          </div>
           {(onSignOut || onSignIn) && (
             <div className="pt-2 pb-1 px-3 flex items-center justify-between gap-3">
               {user ? (

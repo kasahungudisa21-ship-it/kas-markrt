@@ -82,6 +82,7 @@ interface BuyerViewProps {
   onToggleSave: (listing: Listing) => void;
   onSignIn: () => void;
   onSignOut?: () => void;
+  onOpenLegal?: (tab: 'terms' | 'privacy') => void;
 }
 
 export function BuyerView({
@@ -101,6 +102,7 @@ export function BuyerView({
   onToggleSave,
   onSignIn,
   onSignOut,
+  onOpenLegal,
 }: BuyerViewProps) {
   const t = translations[lang];
 
@@ -135,6 +137,7 @@ export function BuyerView({
   const [submitting, setSubmitting] = useState(false);
   const [postedSuccess, setPostedSuccess] = useState(false);
   const [formError, setFormError] = useState('');
+  const [agreedWantedLegal, setAgreedWantedLegal] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -327,6 +330,10 @@ export function BuyerView({
       setFormError(t.phoneValidationError);
       return;
     }
+    if (!agreedWantedLegal) {
+      setFormError(t.legalMustAcceptError);
+      return;
+    }
 
     setFormError('');
     setSubmitting(true);
@@ -362,6 +369,7 @@ export function BuyerView({
       setWantedNotes('');
       setWantedRoomClass('');
       setWantedTenantPref('');
+      setAgreedWantedLegal(false);
       setPostedSuccess(true);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Unable to post buyer request.');
@@ -1313,6 +1321,47 @@ export function BuyerView({
                     className="w-full p-2.5 rounded-lg border border-zinc-300 bg-white text-sm text-zinc-900"
                   />
                 </div>
+
+                <label className="flex items-start gap-2 p-2.5 rounded-lg border border-zinc-200 bg-zinc-50 text-[11px] text-zinc-700 leading-relaxed cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agreedWantedLegal}
+                    onChange={(e) => {
+                      setAgreedWantedLegal(e.target.checked);
+                      if (e.target.checked && formError === t.legalMustAcceptError) {
+                        setFormError('');
+                      }
+                    }}
+                    className="mt-0.5 h-3.5 w-3.5 rounded border-zinc-300 text-emerald-800 focus:ring-emerald-700 shrink-0"
+                  />
+                  <span>
+                    {t.legalAgreePrefix}{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onOpenLegal?.('terms');
+                      }}
+                      className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                    >
+                      {t.termsLink}
+                    </button>{' '}
+                    {t.legalAgreeAnd}{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onOpenLegal?.('privacy');
+                      }}
+                      className="font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950"
+                    >
+                      {t.privacyLink}
+                    </button>
+                    {t.legalAgreeSuffix ? ` ${t.legalAgreeSuffix}` : '.'}
+                  </span>
+                </label>
 
                 {formError && <p className="text-xs text-red-700">{formError}</p>}
 
