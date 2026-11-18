@@ -24,6 +24,7 @@ import {
   GOODS_MODEL_SUGGESTIONS,
   GOODS_TYPE_KEYS,
   translations,
+  VEHICLE_MODEL_GROUPS,
   VEHICLE_MODEL_SUGGESTIONS,
   VEHICLE_TYPE_KEYS,
 } from '../i18n';
@@ -807,15 +808,44 @@ export function SellView({
                       <label className="block text-xs font-medium text-zinc-700 mb-1">
                         {t.vehicleModelLabel}
                       </label>
-                      <input
-                        type="text"
-                        list="sell-vehicle-models"
-                        maxLength={60}
-                        placeholder={t.vehicleModelPlaceholder}
-                        value={vehicleModel}
-                        onChange={(e) => setVehicleModel(e.target.value)}
-                        className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
-                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <select
+                          aria-label={t.vehicleModelLabel}
+                          value={
+                            VEHICLE_MODEL_SUGGESTIONS.some(
+                              (m) => m.toLowerCase() === vehicleModel.trim().toLowerCase()
+                            )
+                              ? VEHICLE_MODEL_SUGGESTIONS.find(
+                                  (m) => m.toLowerCase() === vehicleModel.trim().toLowerCase()
+                                ) || ''
+                              : ''
+                          }
+                          onChange={(e) => {
+                            if (e.target.value) setVehicleModel(e.target.value);
+                          }}
+                          className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white text-zinc-900"
+                        >
+                          <option value="">{t.allModels}</option>
+                          {VEHICLE_MODEL_GROUPS.map((group) => (
+                            <optgroup key={group.brand} label={group.brand}>
+                              {group.models.map((m) => (
+                                <option key={m} value={m}>
+                                  {m}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          list="sell-vehicle-models"
+                          maxLength={60}
+                          placeholder={t.vehicleModelPlaceholder}
+                          value={vehicleModel}
+                          onChange={(e) => setVehicleModel(e.target.value)}
+                          className="w-full h-10 px-3 rounded-lg border border-zinc-300 text-sm bg-white"
+                        />
+                      </div>
                       <datalist id="sell-vehicle-models">
                         {VEHICLE_MODEL_SUGGESTIONS.map((m) => (
                           <option key={m} value={m} />

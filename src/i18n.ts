@@ -333,9 +333,19 @@ interface Dictionary {
   vehicleTypeSuv: string;
   vehicleTypeSedan: string;
   vehicleTypeCompact: string;
+  vehicleTypeCrossover: string;
   vehicleTypePickup: string;
   vehicleTypeVan: string;
+  vehicleTypeBus: string;
   vehicleTypeTruck: string;
+  vehicleTypeElectric: string;
+  vehicleTypeHybrid: string;
+  vehicleTypeLuxury: string;
+  vehicleTypeStationWagon: string;
+  vehicleTypeCoupe: string;
+  vehicleTypeConvertible: string;
+  vehicleTypeMotorcycle: string;
+  vehicleTypeMachinery: string;
   goodsTypeElectronics: string;
   goodsTypePhonesTech: string;
   goodsTypeFurniture: string;
@@ -668,9 +678,19 @@ const en: Dictionary = {
   vehicleTypeSuv: 'SUV / 4x4',
   vehicleTypeSedan: 'Sedan',
   vehicleTypeCompact: 'Compact / Hatchback',
-  vehicleTypePickup: 'Pickup',
+  vehicleTypeCrossover: 'Crossover / CUV',
+  vehicleTypePickup: 'Pickup / 4WD',
   vehicleTypeVan: 'Van / Minibus',
-  vehicleTypeTruck: 'Truck / Commercial',
+  vehicleTypeBus: 'Bus / Coaster',
+  vehicleTypeTruck: 'Truck / Heavy Duty',
+  vehicleTypeElectric: 'Electric / EV',
+  vehicleTypeHybrid: 'Hybrid',
+  vehicleTypeLuxury: 'Luxury / VIP',
+  vehicleTypeStationWagon: 'Station Wagon',
+  vehicleTypeCoupe: 'Coupe / Sport',
+  vehicleTypeConvertible: 'Convertible',
+  vehicleTypeMotorcycle: 'Motorcycle / Bajaj',
+  vehicleTypeMachinery: 'Heavy Machinery',
   goodsTypeElectronics: 'Electronics & TV',
   goodsTypePhonesTech: 'Phones & Computers',
   goodsTypeFurniture: 'Furniture',
@@ -1002,10 +1022,20 @@ const am: Dictionary = {
   goodsNavHeading: 'የዕቃ ዓይነት (Type) እና ሞዴል (Model) መምረጫ',
   vehicleTypeSuv: 'SUV / 4x4',
   vehicleTypeSedan: 'ሴዳን (Sedan)',
-  vehicleTypeCompact: 'ኮምፓክት / ቪትዝ',
+  vehicleTypeCompact: 'ኮምፓክት / ቪትዝ (Hatchback)',
+  vehicleTypeCrossover: 'ክሮስኦቨር (Crossover)',
   vehicleTypePickup: 'ፒካፕ (Pickup)',
   vehicleTypeVan: 'ቫን / ሚኒባስ',
-  vehicleTypeTruck: 'የጭነት መኪና (Truck)',
+  vehicleTypeBus: 'አውቶቡስ / ኮስተር',
+  vehicleTypeTruck: 'የጭነት መኪና / ሲኖትራክ',
+  vehicleTypeElectric: 'ኤሌክትሪክ (EV)',
+  vehicleTypeHybrid: 'ሃይብሪድ (Hybrid)',
+  vehicleTypeLuxury: 'ላግዠሪ / ቪአይፒ',
+  vehicleTypeStationWagon: 'ስቴሽን ዋገን',
+  vehicleTypeCoupe: 'ኩፔ / ስፖርት',
+  vehicleTypeConvertible: 'ኮንቨርቲብል',
+  vehicleTypeMotorcycle: 'ሞተር ሳይክል / ባጃጅ',
+  vehicleTypeMachinery: 'የግንባታ ማሽነሪ',
   goodsTypeElectronics: 'ኤሌክትሮኒክስ እና ቲቪ',
   goodsTypePhonesTech: 'ስልክ እና ኮምፒውተር',
   goodsTypeFurniture: 'የቤት ዕቃ (ፈርኒቸር)',
@@ -1145,9 +1175,19 @@ export const VEHICLE_TYPE_KEYS: VehicleType[] = [
   'suv',
   'sedan',
   'compact',
+  'crossover',
   'pickup',
   'van',
+  'bus',
   'truck',
+  'electric',
+  'hybrid',
+  'luxury',
+  'station_wagon',
+  'coupe',
+  'convertible',
+  'motorcycle',
+  'machinery',
 ];
 
 export const GOODS_TYPE_KEYS: GoodsType[] = [
@@ -1160,22 +1200,214 @@ export const GOODS_TYPE_KEYS: GoodsType[] = [
   'other',
 ];
 
-export const VEHICLE_MODEL_SUGGESTIONS: string[] = [
-  'Toyota RAV4',
-  'Toyota Vitz',
-  'Toyota Corolla',
-  'Toyota Yaris',
-  'Toyota Hilux',
-  'Toyota Land Cruiser',
-  'Hyundai Tucson',
-  'Hyundai Elantra',
-  'Suzuki Dzire',
-  'Suzuki Swift',
-  'BYD Song Plus',
-  'BYD Seagull',
-  'Kia Sportage',
-  'Isuzu NPR',
+export const VEHICLE_MODEL_GROUPS: { brand: string; models: string[] }[] = [
+  {
+    brand: 'Toyota',
+    models: [
+      'Toyota Vitz',
+      'Toyota Yaris',
+      'Toyota Corolla',
+      'Toyota Corolla Cross',
+      'Toyota RAV4',
+      'Toyota Hilux',
+      'Toyota Land Cruiser',
+      'Toyota Land Cruiser Prado',
+      'Toyota Fortuner',
+      'Toyota Rush',
+      'Toyota Avanza',
+      'Toyota Belta',
+      'Toyota Platz',
+      'Toyota Passo',
+      'Toyota Auris',
+      'Toyota Aqua',
+      'Toyota Prius',
+      'Toyota Camry',
+      'Toyota Crown',
+      'Toyota C-HR',
+      'Toyota HiAce',
+      'Toyota Coaster',
+      'Toyota Probox',
+      'Toyota Succeed',
+      'Toyota Starlet',
+      'Toyota bZ4X',
+    ],
+  },
+  {
+    brand: 'Hyundai',
+    models: [
+      'Hyundai Atos',
+      'Hyundai i10',
+      'Hyundai i20',
+      'Hyundai Accent',
+      'Hyundai Elantra',
+      'Hyundai Sonata',
+      'Hyundai Creta',
+      'Hyundai Kona',
+      'Hyundai Tucson',
+      'Hyundai Santa Fe',
+      'Hyundai Palisade',
+      'Hyundai Starex',
+      'Hyundai Staria',
+      'Hyundai HD65 / HD72',
+    ],
+  },
+  {
+    brand: 'Suzuki',
+    models: [
+      'Suzuki Alto',
+      'Suzuki S-Presso',
+      'Suzuki Celerio',
+      'Suzuki Swift',
+      'Suzuki Dzire',
+      'Suzuki Baleno',
+      'Suzuki Ciaz',
+      'Suzuki Fronx',
+      'Suzuki Ertiga',
+      'Suzuki Vitara',
+      'Suzuki Grand Vitara',
+      'Suzuki Jimny',
+    ],
+  },
+  {
+    brand: 'BYD & Electric (EV)',
+    models: [
+      'BYD Seagull',
+      'BYD Dolphin',
+      'BYD Atto 3',
+      'BYD Yuan Plus',
+      'BYD Song Plus',
+      'BYD Song Pro',
+      'BYD Qin Plus',
+      'BYD Tang',
+      'BYD Han',
+      'Volkswagen ID.3',
+      'Volkswagen ID.4',
+      'Volkswagen ID.6',
+      'Changan Eado EV',
+      'Changan BenBen E-Star',
+      'Neta V',
+      'MG4 EV',
+      'MG ZS EV',
+      'Geely Geometry',
+      'Tesla Model 3',
+      'Tesla Model Y',
+    ],
+  },
+  {
+    brand: 'Kia',
+    models: [
+      'Kia Picanto',
+      'Kia Rio',
+      'Kia Cerato',
+      'Kia K5 / Optima',
+      'Kia Seltos',
+      'Kia Sportage',
+      'Kia Sorento',
+      'Kia Telluride',
+      'Kia Bongo',
+    ],
+  },
+  {
+    brand: 'Nissan, Mitsubishi & Honda',
+    models: [
+      'Nissan Sunny',
+      'Nissan Tiida',
+      'Nissan Note',
+      'Nissan Juke',
+      'Nissan Qashqai',
+      'Nissan X-Trail',
+      'Nissan Patrol',
+      'Nissan Navara',
+      'Nissan Urvan',
+      'Mitsubishi Lancer',
+      'Mitsubishi ASX',
+      'Mitsubishi Outlander',
+      'Mitsubishi Pajero',
+      'Mitsubishi L200',
+      'Honda Fit',
+      'Honda Civic',
+      'Honda Accord',
+      'Honda HR-V',
+      'Honda CR-V',
+    ],
+  },
+  {
+    brand: 'Ford, Mazda, Chevrolet & Chery',
+    models: [
+      'Ford Fiesta',
+      'Ford Focus',
+      'Ford Escape',
+      'Ford Ranger',
+      'Ford Explorer',
+      'Ford F-150',
+      'Mazda 3',
+      'Mazda CX-5',
+      'Chevrolet Aveo',
+      'Chevrolet Cruze',
+      'Chery Tiggo 4 / 7 / 8',
+      'Jetour X70 / Dashing',
+      'Subaru Forester',
+      'Jeep Wrangler',
+      'Jeep Grand Cherokee',
+    ],
+  },
+  {
+    brand: 'Mercedes, BMW, VW, Lexus & Range Rover',
+    models: [
+      'Mercedes-Benz C-Class',
+      'Mercedes-Benz E-Class',
+      'Mercedes-Benz S-Class',
+      'Mercedes-Benz GLC / GLE',
+      'Mercedes-Benz G-Class',
+      'Mercedes-Benz Sprinter',
+      'BMW 3 Series',
+      'BMW 5 Series',
+      'BMW X3',
+      'BMW X5',
+      'Volkswagen Polo',
+      'Volkswagen Golf',
+      'Volkswagen Passat',
+      'Volkswagen Tiguan',
+      'Audi A4',
+      'Audi Q5',
+      'Audi Q7',
+      'Lexus NX',
+      'Lexus RX 350',
+      'Lexus LX 570 / 600',
+      'Range Rover Evoque',
+      'Range Rover Sport',
+      'Range Rover Vogue',
+      'Land Rover Defender',
+      'Land Rover Discovery',
+      'Porsche Cayenne',
+    ],
+  },
+  {
+    brand: 'Trucks, Buses, Bajaj & Machinery',
+    models: [
+      'Isuzu NPR',
+      'Isuzu NQR',
+      'Isuzu FSR',
+      'Isuzu D-Max',
+      'Sinotruk Howo',
+      'Iveco Eurocargo',
+      'Iveco Trakker',
+      'Mitsubishi Fuso Canter',
+      'Foton Tunland',
+      'Yutong Bus',
+      'King Long Bus',
+      'Bajaj RE',
+      'TVS King Bajaj',
+      'Lifan / Yamaha Motorcycle',
+      'Caterpillar Excavator',
+      'JCB Backhoe Loader',
+    ],
+  },
 ];
+
+export const VEHICLE_MODEL_SUGGESTIONS: string[] = VEHICLE_MODEL_GROUPS.flatMap(
+  (group) => group.models
+);
 
 export const GOODS_MODEL_SUGGESTIONS: string[] = [
   'iPhone 15 Pro',
@@ -1199,12 +1431,32 @@ export function getVehicleTypeLabel(value: string, lang: Language): string {
       return t.vehicleTypeSedan;
     case 'compact':
       return t.vehicleTypeCompact;
+    case 'crossover':
+      return t.vehicleTypeCrossover;
     case 'pickup':
       return t.vehicleTypePickup;
     case 'van':
       return t.vehicleTypeVan;
+    case 'bus':
+      return t.vehicleTypeBus;
     case 'truck':
       return t.vehicleTypeTruck;
+    case 'electric':
+      return t.vehicleTypeElectric;
+    case 'hybrid':
+      return t.vehicleTypeHybrid;
+    case 'luxury':
+      return t.vehicleTypeLuxury;
+    case 'station_wagon':
+      return t.vehicleTypeStationWagon;
+    case 'coupe':
+      return t.vehicleTypeCoupe;
+    case 'convertible':
+      return t.vehicleTypeConvertible;
+    case 'motorcycle':
+      return t.vehicleTypeMotorcycle;
+    case 'machinery':
+      return t.vehicleTypeMachinery;
     default:
       return value;
   }

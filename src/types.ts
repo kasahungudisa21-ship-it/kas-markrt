@@ -26,7 +26,23 @@ export type RoomClass = '1_class' | '2_class' | '3_plus';
 
 export type TenantPreference = 'late' | 'bale_tedar' | 'any';
 
-export type VehicleType = 'suv' | 'sedan' | 'compact' | 'pickup' | 'van' | 'truck';
+export type VehicleType =
+  | 'suv'
+  | 'sedan'
+  | 'compact'
+  | 'crossover'
+  | 'pickup'
+  | 'van'
+  | 'bus'
+  | 'truck'
+  | 'electric'
+  | 'hybrid'
+  | 'luxury'
+  | 'station_wagon'
+  | 'coupe'
+  | 'convertible'
+  | 'motorcycle'
+  | 'machinery';
 
 export type GoodsType =
   | 'electronics'

@@ -32,6 +32,7 @@ import {
   GOODS_MODEL_SUGGESTIONS,
   GOODS_TYPE_KEYS,
   translations,
+  VEHICLE_MODEL_GROUPS,
   VEHICLE_MODEL_SUGGESTIONS,
   VEHICLE_TYPE_KEYS,
 } from '../i18n';
@@ -158,17 +159,21 @@ export function BuyerView({
     { key: 'goods', label: t.catGoods, Icon: Package },
   ];
 
-  const vehicleModelOptions = useMemo(() => {
+  const customVehicleModels = useMemo(() => {
+    const known = new Set(VEHICLE_MODEL_SUGGESTIONS.map((m) => m.toLowerCase()));
     const map = new Map<string, string>();
     allListings.forEach((item) => {
       const m = item.category === 'vehicle' ? item.specs?.vehicleModel?.trim() : '';
-      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
-    });
-    VEHICLE_MODEL_SUGGESTIONS.forEach((m) => {
-      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+      if (m && !known.has(m.toLowerCase()) && !map.has(m.toLowerCase())) {
+        map.set(m.toLowerCase(), m);
+      }
     });
     return Array.from(map.values());
   }, [allListings]);
+
+  const vehicleModelOptions = useMemo(() => {
+    return [...customVehicleModels, ...VEHICLE_MODEL_SUGGESTIONS];
+  }, [customVehicleModels]);
 
   const goodsModelOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -675,10 +680,23 @@ export function BuyerView({
                     className="w-full h-9 px-3 rounded-lg border border-[#BFD6F6] bg-white text-xs font-semibold text-[#142F66]"
                   >
                     <option value="">{t.allModels}</option>
-                    {vehicleModelOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
+                    {customVehicleModels.length > 0 && (
+                      <optgroup label="Listed">
+                        {customVehicleModels.map((m) => (
+                          <option key={`custom-${m}`} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {VEHICLE_MODEL_GROUPS.map((group) => (
+                      <optgroup key={group.brand} label={group.brand}>
+                        {group.models.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </div>

@@ -186,10 +186,14 @@ export function ListingDetailModal({
 
   const specRows: { label: string; value: string }[] = [];
   const s = listing.specs || {};
-  if (s.roomClass) {
+  const isHousingListing =
+    listing.category === 'apartment' ||
+    listing.category === 'condominium' ||
+    listing.category === 'house';
+  if (isHousingListing && s.roomClass) {
     specRows.push({ label: t.roomClassLabel, value: getRoomClassLabel(s.roomClass, lang) });
   }
-  if (s.tenantPreference) {
+  if (isHousingListing && s.tenantPreference) {
     specRows.push({
       label: t.tenantPrefLabel,
       value: getTenantPreferenceLabel(s.tenantPreference, lang),

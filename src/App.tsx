@@ -38,6 +38,7 @@ import {
   GOODS_MODEL_SUGGESTIONS,
   GOODS_TYPE_KEYS,
   translations,
+  VEHICLE_MODEL_GROUPS,
   VEHICLE_MODEL_SUGGESTIONS,
   VEHICLE_TYPE_KEYS,
 } from './i18n';
@@ -535,17 +536,21 @@ export default function App() {
     setSortOrder('newest');
   };
 
-  const vehicleModelOptions = useMemo(() => {
+  const customVehicleModels = useMemo(() => {
+    const known = new Set(VEHICLE_MODEL_SUGGESTIONS.map((m) => m.toLowerCase()));
     const map = new Map<string, string>();
     combinedListings.forEach((item) => {
       const m = item.category === 'vehicle' ? item.specs?.vehicleModel?.trim() : '';
-      if (m && !map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
-    });
-    VEHICLE_MODEL_SUGGESTIONS.forEach((m) => {
-      if (!map.has(m.toLowerCase())) map.set(m.toLowerCase(), m);
+      if (m && !known.has(m.toLowerCase()) && !map.has(m.toLowerCase())) {
+        map.set(m.toLowerCase(), m);
+      }
     });
     return Array.from(map.values());
   }, [combinedListings]);
+
+  const vehicleModelOptions = useMemo(() => {
+    return [...customVehicleModels, ...VEHICLE_MODEL_SUGGESTIONS];
+  }, [customVehicleModels]);
 
   const goodsModelOptions = useMemo(() => {
     const map = new Map<string, string>();
@@ -1045,6 +1050,14 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         setCategoryFilter(tab.key);
+                        if (
+                          tab.key === 'vehicle' ||
+                          tab.key === 'goods' ||
+                          tab.key === 'land'
+                        ) {
+                          setRoomClassFilter('all');
+                          setTenantPrefFilter('all');
+                        }
                         if (tab.key !== 'vehicle') {
                           setVehicleTypeFilter('all');
                           setVehicleModelFilter('');
@@ -1089,13 +1102,18 @@ export default function App() {
                     ))}
                   </div>
 
-                  {(txFilter === 'rent' ||
+                  {(categoryFilter === 'all' ||
                     categoryFilter === 'properties' ||
                     categoryFilter === 'apartment' ||
                     categoryFilter === 'condominium' ||
-                    categoryFilter === 'house' ||
-                    roomClassFilter !== 'all' ||
-                    tenantPrefFilter !== 'all') && (
+                    categoryFilter === 'house') &&
+                    (txFilter === 'rent' ||
+                      categoryFilter === 'properties' ||
+                      categoryFilter === 'apartment' ||
+                      categoryFilter === 'condominium' ||
+                      categoryFilter === 'house' ||
+                      roomClassFilter !== 'all' ||
+                      tenantPrefFilter !== 'all') && (
                     <>
                       <select
                         aria-label={t.roomClassLabel}
@@ -1189,8 +1207,8 @@ export default function App() {
                     )}
                   </div>
 
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                    <div className="flex items-center gap-1.5 p-1 bg-white/90 border border-[#D4E4FA] rounded-xl overflow-x-auto max-w-full">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-white/90 border border-[#D4E4FA] rounded-xl">
                       <button
                         type="button"
                         onClick={() => setVehicleTypeFilter('all')}
@@ -1218,7 +1236,7 @@ export default function App() {
                       ))}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
                         aria-label={t.vehicleModelLabel}
                         value={
@@ -1231,13 +1249,26 @@ export default function App() {
                             : ''
                         }
                         onChange={(e) => setVehicleModelFilter(e.target.value)}
-                        className="h-9 px-3 rounded-xl border border-[#BFD6F6] bg-white text-xs font-semibold text-[#142F66] focus:outline-none focus:ring-2 focus:ring-blue-700"
+                        className="h-9 px-3 rounded-xl border border-[#BFD6F6] bg-white text-xs font-semibold text-[#142F66] focus:outline-none focus:ring-2 focus:ring-blue-700 max-w-full"
                       >
                         <option value="">{t.allModels}</option>
-                        {vehicleModelOptions.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
+                        {customVehicleModels.length > 0 && (
+                          <optgroup label="Listed">
+                            {customVehicleModels.map((m) => (
+                              <option key={`custom-${m}`} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {VEHICLE_MODEL_GROUPS.map((group) => (
+                          <optgroup key={group.brand} label={group.brand}>
+                            {group.models.map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
 

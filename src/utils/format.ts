@@ -90,12 +90,22 @@ export function formatSpecsLine(listing: Listing, lang: Language): string {
 }
 
 const VEHICLE_TYPE_KEYWORDS: Record<string, string[]> = {
-  suv: ['suv', '4x4', 'rav4', 'tucson', 'sportage', 'land cruiser', 'prado', 'song', 'cross', 'highlander'],
-  sedan: ['sedan', 'corolla', 'elantra', 'dzire', 'camry', 'accord', 'civic'],
-  compact: ['compact', 'hatchback', 'vitz', 'yaris', 'swift', 'seagull', 'picanto', 'alto'],
-  pickup: ['pickup', 'hilux', 'ranger', 'navara', 'd-max', 'tacoma'],
-  van: ['van', 'minibus', 'hiace', 'minivan', 'dolphin'],
-  truck: ['truck', 'isuzu', 'npr', 'sino', 'cargo', 'lorry'],
+  suv: ['suv', '4x4', 'rav4', 'tucson', 'sportage', 'land cruiser', 'prado', 'fortuner', 'song', 'highlander', 'defender', 'pajero', 'x-trail', 'patrol'],
+  sedan: ['sedan', 'corolla', 'elantra', 'dzire', 'camry', 'accord', 'civic', 'accent', 'belta', 'platz', 'sunny', 'sonata', 'ciaz', 'crown'],
+  compact: ['compact', 'hatchback', 'vitz', 'yaris', 'swift', 'seagull', 'picanto', 'alto', 'i10', 'i20', 'atos', 'passo', 'celerio', 'fit', 'polo', 'golf'],
+  crossover: ['crossover', 'cuv', 'corolla cross', 'c-hr', 'kona', 'creta', 'fronx', 'seltos', 'qashqai', 'juke', 'hr-v', 'rush', 'tiggo', 'jetour', 'atto'],
+  pickup: ['pickup', 'hilux', 'ranger', 'navara', 'd-max', 'tacoma', 'l200', 'f-150', 'tunland'],
+  van: ['van', 'minibus', 'hiace', 'minivan', 'dolphin', 'starex', 'staria', 'avanza', 'ertiga', 'urvan', 'sprinter', 'bongo'],
+  bus: ['bus', 'coaster', 'yutong', 'king long'],
+  truck: ['truck', 'isuzu', 'npr', 'nqr', 'fsr', 'sino', 'sinotruk', 'howo', 'cargo', 'lorry', 'iveco', 'fuso', 'canter', 'hd65', 'hd72'],
+  electric: ['electric', 'ev', 'byd', 'seagull', 'dolphin', 'atto', 'id.4', 'id.6', 'id.3', 'bz4x', 'neta', 'tesla', 'eado'],
+  hybrid: ['hybrid', 'prius', 'aqua', 'rav4 hybrid', 'corolla cross hybrid'],
+  luxury: ['luxury', 'vip', 'mercedes', 'bmw', 'lexus', 'range rover', 'porsche', 'audi', 'g-class', 's-class', 'vogue', 'lx 570'],
+  station_wagon: ['wagon', 'station wagon', 'probox', 'succeed', 'estate', 'touring'],
+  coupe: ['coupe', 'sport', 'mustang', 'camaro', '2-door'],
+  convertible: ['convertible', 'cabriolet', 'roadster'],
+  motorcycle: ['motorcycle', 'motorbike', 'bajaj', 'tvs', 'lifan', 'yamaha', 'scooter', 'bike'],
+  machinery: ['excavator', 'loader', 'backhoe', 'caterpillar', 'jcb', 'grader', 'crane', 'forklift', 'dozer', 'machinery'],
 };
 
 const GOODS_TYPE_KEYWORDS: Record<string, string[]> = {
@@ -110,12 +120,20 @@ const GOODS_TYPE_KEYWORDS: Record<string, string[]> = {
 export function matchesVehicleType(listing: Listing, typeFilter: string): boolean {
   if (!typeFilter || typeFilter === 'all') return true;
   if (listing.category !== 'vehicle') return false;
+  const target = typeFilter.toLowerCase();
   const specType = (listing.specs?.vehicleType || '').trim().toLowerCase();
-  if (specType) {
-    return specType === typeFilter.toLowerCase();
+  const fuel = (listing.specs?.fuelType || '').trim().toLowerCase();
+  if (target === 'electric' && (specType === 'electric' || fuel === 'electric')) {
+    return true;
   }
-  const hay = `${listing.title} ${listing.description} ${listing.specs?.vehicleModel || ''}`.toLowerCase();
-  const keywords = VEHICLE_TYPE_KEYWORDS[typeFilter.toLowerCase()] || [typeFilter.toLowerCase()];
+  if (target === 'hybrid' && (specType === 'hybrid' || fuel === 'hybrid')) {
+    return true;
+  }
+  if (specType) {
+    return specType === target;
+  }
+  const hay = `${listing.title} ${listing.description} ${listing.specs?.vehicleModel || ''} ${fuel}`.toLowerCase();
+  const keywords = VEHICLE_TYPE_KEYWORDS[target] || [target];
   return keywords.some((kw) => hay.includes(kw));
 }
 
