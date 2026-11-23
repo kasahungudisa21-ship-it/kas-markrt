@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
-import { ArrowLeft, Bell, Check, CheckCheck, LogOut, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, Check, CheckCheck, LogOut, Pencil, Trash2, X } from 'lucide-react';
 import {
   closeInquiryThread,
   deleteNotification,
@@ -261,8 +261,16 @@ export function ConnectionsView({
       </div>
 
       {actionError && (
-        <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs font-medium">
-          {actionError}
+        <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs font-medium flex items-center justify-between gap-3">
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError('')}
+            aria-label="Dismiss error"
+            className="p-1 rounded-lg hover:bg-red-100 shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -340,9 +348,12 @@ export function ConnectionsView({
                             type="button"
                             disabled={busyId === ord.id}
                             onClick={async () => {
+                              setActionError('');
                               setBusyId(ord.id);
                               try {
                                 await updateOrderStatus(ord.id, 'confirmed');
+                              } catch (err) {
+                                setActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }
@@ -358,9 +369,12 @@ export function ConnectionsView({
                             type="button"
                             disabled={busyId === ord.id}
                             onClick={async () => {
+                              setActionError('');
                               setBusyId(ord.id);
                               try {
                                 await updateOrderStatus(ord.id, 'completed');
+                              } catch (err) {
+                                setActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }
@@ -376,9 +390,12 @@ export function ConnectionsView({
                             type="button"
                             disabled={busyId === ord.id}
                             onClick={async () => {
+                              setActionError('');
                               setBusyId(ord.id);
                               try {
                                 await updateOrderStatus(ord.id, 'cancelled');
+                              } catch (err) {
+                                setActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }
@@ -393,9 +410,12 @@ export function ConnectionsView({
                           type="button"
                           disabled={busyId === ord.id}
                           onClick={async () => {
+                            setActionError('');
                             setBusyId(ord.id);
                             try {
                               await removeOrder(ord.id);
+                            } catch (err) {
+                              setActionError(formatFirestoreUserError(err, lang));
                             } finally {
                               setBusyId(null);
                             }
@@ -469,9 +489,12 @@ export function ConnectionsView({
                             type="button"
                             disabled={busyId === ord.id}
                             onClick={async () => {
+                              setActionError('');
                               setBusyId(ord.id);
                               try {
                                 await updateOrderStatus(ord.id, 'cancelled');
+                              } catch (err) {
+                                setActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }
@@ -486,9 +509,12 @@ export function ConnectionsView({
                           type="button"
                           disabled={busyId === ord.id}
                           onClick={async () => {
+                            setActionError('');
                             setBusyId(ord.id);
                             try {
                               await removeOrder(ord.id);
+                            } catch (err) {
+                              setActionError(formatFirestoreUserError(err, lang));
                             } finally {
                               setBusyId(null);
                             }
@@ -556,9 +582,12 @@ export function ConnectionsView({
                             type="button"
                             disabled={busyId === ord.id}
                             onClick={async () => {
+                              setActionError('');
                               setBusyId(ord.id);
                               try {
                                 await updateOrderStatus(ord.id, 'confirmed');
+                              } catch (err) {
+                                setActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }
@@ -574,9 +603,12 @@ export function ConnectionsView({
                             type="button"
                             disabled={busyId === ord.id}
                             onClick={async () => {
+                              setActionError('');
                               setBusyId(ord.id);
                               try {
                                 await updateOrderStatus(ord.id, 'completed');
+                              } catch (err) {
+                                setActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }
@@ -591,9 +623,12 @@ export function ConnectionsView({
                           type="button"
                           disabled={busyId === ord.id}
                           onClick={async () => {
+                            setActionError('');
                             setBusyId(ord.id);
                             try {
                               await removeOrder(ord.id);
+                            } catch (err) {
+                              setActionError(formatFirestoreUserError(err, lang));
                             } finally {
                               setBusyId(null);
                             }
@@ -659,9 +694,12 @@ export function ConnectionsView({
                   type="button"
                   disabled={busyId === 'mark_all'}
                   onClick={async () => {
+                    setActionError('');
                     setBusyId('mark_all');
                     try {
                       await markAllNotificationsRead(unreadNotifications.map((n) => n.id));
+                    } catch (err) {
+                      setActionError(formatFirestoreUserError(err, lang));
                     } finally {
                       setBusyId(null);
                     }
@@ -728,7 +766,9 @@ export function ConnectionsView({
                       type="button"
                       onClick={async () => {
                         if (!notif.isRead) {
-                          markNotificationRead(notif.id).catch(() => {});
+                          markNotificationRead(notif.id).catch((err) => {
+                            setActionError(formatFirestoreUserError(err, lang));
+                          });
                         }
                         setActiveTab('orders');
                       }}
@@ -742,9 +782,12 @@ export function ConnectionsView({
                         type="button"
                         disabled={busyId === notif.id}
                         onClick={async () => {
+                          setActionError('');
                           setBusyId(notif.id);
                           try {
                             await markNotificationRead(notif.id);
+                          } catch (err) {
+                            setActionError(formatFirestoreUserError(err, lang));
                           } finally {
                             setBusyId(null);
                           }
@@ -760,9 +803,12 @@ export function ConnectionsView({
                       type="button"
                       disabled={busyId === notif.id}
                       onClick={async () => {
+                        setActionError('');
                         setBusyId(notif.id);
                         try {
                           await deleteNotification(notif.id);
+                        } catch (err) {
+                          setActionError(formatFirestoreUserError(err, lang));
                         } finally {
                           setBusyId(null);
                         }
@@ -979,9 +1025,12 @@ export function ConnectionsView({
                             type="button"
                             disabled={busyId === item.id}
                             onClick={async () => {
+                              setActionError('');
                               setBusyId(item.id);
                               try {
                                 await updateListingStatus(item.id, 'closed');
+                              } catch (err) {
+                                setActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }
@@ -995,6 +1044,7 @@ export function ConnectionsView({
                           type="button"
                           disabled={busyId === item.id}
                           onClick={async () => {
+                            setActionError('');
                             setBusyId(item.id);
                             try {
                               if (onDeleteListing) {
@@ -1002,6 +1052,8 @@ export function ConnectionsView({
                               } else {
                                 await removeListing(item.id);
                               }
+                            } catch (err) {
+                              setActionError(formatFirestoreUserError(err, lang));
                             } finally {
                               setBusyId(null);
                             }

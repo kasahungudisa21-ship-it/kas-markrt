@@ -124,6 +124,7 @@ export function BuyerView({
   const [maxBudget, setMaxBudget] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
   const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [requestActionError, setRequestActionError] = useState('');
 
   // Buyer Wanted Request form state
   const [wantedCategory, setWantedCategory] = useState<ListingCategory>('apartment');
@@ -1382,6 +1383,11 @@ export function BuyerView({
               <h3 className="text-sm font-bold text-[#0F4C3A]">
                 {t.activeWantedTitle} ({buyerRequests.length})
               </h3>
+              {requestActionError && (
+                <p className="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {requestActionError}
+                </p>
+              )}
               <div className="divide-y divide-[#EFECE4]">
                 {buyerRequests.map((req) => {
                   const isOwn = Boolean(user && req.buyerId === user.uid);
@@ -1416,9 +1422,12 @@ export function BuyerView({
                               type="button"
                               disabled={busyId === req.id}
                               onClick={async () => {
+                                setRequestActionError('');
                                 setBusyId(req.id);
                                 try {
                                   await updateBuyerRequestStatus(req.id, 'fulfilled');
+                                } catch (err) {
+                                  setRequestActionError(formatFirestoreUserError(err, lang));
                                 } finally {
                                   setBusyId(null);
                                 }
@@ -1432,9 +1441,12 @@ export function BuyerView({
                             type="button"
                             disabled={busyId === req.id}
                             onClick={async () => {
+                              setRequestActionError('');
                               setBusyId(req.id);
                               try {
                                 await deleteBuyerRequest(req.id);
+                              } catch (err) {
+                                setRequestActionError(formatFirestoreUserError(err, lang));
                               } finally {
                                 setBusyId(null);
                               }

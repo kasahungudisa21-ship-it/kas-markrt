@@ -95,6 +95,7 @@ export function ListingDetailModal({
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -105,6 +106,7 @@ export function ListingDetailModal({
     setMsgSentSuccess(false);
     setMsgError('');
     setAgreedMsgLegal(false);
+    setDeleteError('');
     setActivePhotoIdx(0);
     setVideoSrc(null);
     setVideoLoading(false);
@@ -578,23 +580,33 @@ export function ListingDetailModal({
               </button>
 
               {(isOwner || isAdmin) && onDeleteListing && (
-                <button
-                  type="button"
-                  disabled={deleting}
-                  onClick={async () => {
-                    setDeleting(true);
-                    try {
-                      await onDeleteListing(listing);
-                      onClose();
-                    } finally {
-                      setDeleting(false);
-                    }
-                  }}
-                  className="w-full min-h-[40px] px-4 py-2 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-xs font-medium text-red-700 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>{t.deleteListing}</span>
-                </button>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={async () => {
+                      setDeleteError('');
+                      setDeleting(true);
+                      try {
+                        await onDeleteListing(listing);
+                        onClose();
+                      } catch (err) {
+                        setDeleteError(formatFirestoreUserError(err, lang));
+                      } finally {
+                        setDeleting(false);
+                      }
+                    }}
+                    className="w-full min-h-[40px] px-4 py-2 rounded-lg border border-red-200 bg-white hover:bg-red-50 text-xs font-medium text-red-700 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>{t.deleteListing}</span>
+                  </button>
+                  {deleteError && (
+                    <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      {deleteError}
+                    </p>
+                  )}
+                </div>
               )}
 
               <div className="pt-4 border-t border-[#E5E0D6] space-y-4">

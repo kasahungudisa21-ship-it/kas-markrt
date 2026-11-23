@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Trash2,
   Users,
+  X,
 } from 'lucide-react';
 import {
   deleteBuyerRequest,
@@ -53,7 +54,7 @@ import {
   Order,
   TransactionType,
 } from '../types';
-import { formatPrice } from '../utils/format';
+import { formatFirestoreUserError, formatPrice } from '../utils/format';
 import { KasLogo } from './KasLogo';
 
 export type DashboardTheme = 'cobalt' | 'indigo' | 'amber';
@@ -190,6 +191,7 @@ export function DashboardView({
   const [contactRoleFilter, setContactRoleFilter] = useState<'all' | ContactRole>('all');
   const [contactSearch, setContactSearch] = useState('');
   const [busyContactId, setBusyContactId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
   const unreadNotifications = useMemo(
     () => notifications.filter((n) => !n.isRead),
     [notifications]
@@ -527,6 +529,20 @@ export function DashboardView({
                 )}
               </div>
             </div>
+
+            {actionError && (
+              <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-100 text-xs font-medium flex items-center justify-between gap-3">
+                <span>{actionError}</span>
+                <button
+                  type="button"
+                  onClick={() => setActionError('')}
+                  aria-label="Dismiss error"
+                  className="p-1 rounded-lg hover:bg-rose-900/70 shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             {/* 4-Column KPI Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -928,6 +944,7 @@ export function DashboardView({
                                     type="button"
                                     disabled={busyListingId === item.id}
                                     onClick={async () => {
+                                      setActionError('');
                                       setBusyListingId(item.id);
                                       try {
                                         if (onDeleteListing) {
@@ -935,6 +952,8 @@ export function DashboardView({
                                         } else if (!item.isShowcase) {
                                           await removeListing(item.id);
                                         }
+                                      } catch (err) {
+                                        setActionError(formatFirestoreUserError(err, lang));
                                       } finally {
                                         setBusyListingId(null);
                                       }
@@ -986,8 +1005,9 @@ export function DashboardView({
                         <button
                           type="button"
                           onClick={() => {
+                            setActionError('');
                             markAllNotificationsRead(unreadNotifications.map((n) => n.id)).catch(
-                              () => {}
+                              (err) => setActionError(formatFirestoreUserError(err, lang))
                             );
                           }}
                           className={`px-3 py-1.5 rounded-lg border ${palette.border} text-xs font-medium ${palette.textSecondary} hover:opacity-90`}
@@ -1062,9 +1082,12 @@ export function DashboardView({
                                         type="button"
                                         disabled={busyOrderId === ord.id}
                                         onClick={async () => {
+                                          setActionError('');
                                           setBusyOrderId(ord.id);
                                           try {
                                             await updateOrderStatus(ord.id, 'confirmed');
+                                          } catch (err) {
+                                            setActionError(formatFirestoreUserError(err, lang));
                                           } finally {
                                             setBusyOrderId(null);
                                           }
@@ -1079,9 +1102,12 @@ export function DashboardView({
                                         type="button"
                                         disabled={busyOrderId === ord.id}
                                         onClick={async () => {
+                                          setActionError('');
                                           setBusyOrderId(ord.id);
                                           try {
                                             await updateOrderStatus(ord.id, 'completed');
+                                          } catch (err) {
+                                            setActionError(formatFirestoreUserError(err, lang));
                                           } finally {
                                             setBusyOrderId(null);
                                           }
@@ -1095,9 +1121,12 @@ export function DashboardView({
                                       type="button"
                                       disabled={busyOrderId === ord.id}
                                       onClick={async () => {
+                                        setActionError('');
                                         setBusyOrderId(ord.id);
                                         try {
                                           await removeOrder(ord.id);
+                                        } catch (err) {
+                                          setActionError(formatFirestoreUserError(err, lang));
                                         } finally {
                                           setBusyOrderId(null);
                                         }
@@ -1153,9 +1182,12 @@ export function DashboardView({
                                       type="button"
                                       disabled={busyOrderId === ord.id}
                                       onClick={async () => {
+                                        setActionError('');
                                         setBusyOrderId(ord.id);
                                         try {
                                           await removeOrder(ord.id);
+                                        } catch (err) {
+                                          setActionError(formatFirestoreUserError(err, lang));
                                         } finally {
                                           setBusyOrderId(null);
                                         }
@@ -1212,9 +1244,12 @@ export function DashboardView({
                                         type="button"
                                         disabled={busyOrderId === ord.id}
                                         onClick={async () => {
+                                          setActionError('');
                                           setBusyOrderId(ord.id);
                                           try {
                                             await updateOrderStatus(ord.id, 'confirmed');
+                                          } catch (err) {
+                                            setActionError(formatFirestoreUserError(err, lang));
                                           } finally {
                                             setBusyOrderId(null);
                                           }
@@ -1229,9 +1264,12 @@ export function DashboardView({
                                         type="button"
                                         disabled={busyOrderId === ord.id}
                                         onClick={async () => {
+                                          setActionError('');
                                           setBusyOrderId(ord.id);
                                           try {
                                             await updateOrderStatus(ord.id, 'completed');
+                                          } catch (err) {
+                                            setActionError(formatFirestoreUserError(err, lang));
                                           } finally {
                                             setBusyOrderId(null);
                                           }
@@ -1245,9 +1283,12 @@ export function DashboardView({
                                       type="button"
                                       disabled={busyOrderId === ord.id}
                                       onClick={async () => {
+                                        setActionError('');
                                         setBusyOrderId(ord.id);
                                         try {
                                           await removeOrder(ord.id);
+                                        } catch (err) {
+                                          setActionError(formatFirestoreUserError(err, lang));
                                         } finally {
                                           setBusyOrderId(null);
                                         }
@@ -1329,9 +1370,12 @@ export function DashboardView({
                                   type="button"
                                   disabled={busyRequestId === req.id}
                                   onClick={async () => {
+                                    setActionError('');
                                     setBusyRequestId(req.id);
                                     try {
                                       await deleteBuyerRequest(req.id);
+                                    } catch (err) {
+                                      setActionError(formatFirestoreUserError(err, lang));
                                     } finally {
                                       setBusyRequestId(null);
                                     }
@@ -1463,9 +1507,12 @@ export function DashboardView({
                                 type="button"
                                 disabled={busyContactId === entry.id}
                                 onClick={async () => {
+                                  setActionError('');
                                   setBusyContactId(entry.id);
                                   try {
                                     await deleteContactEntry(entry.id);
+                                  } catch (err) {
+                                    setActionError(formatFirestoreUserError(err, lang));
                                   } finally {
                                     setBusyContactId(null);
                                   }

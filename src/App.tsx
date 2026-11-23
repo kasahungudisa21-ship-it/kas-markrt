@@ -695,6 +695,24 @@ export default function App() {
             </div>
           </div>
         )}
+        {user && !user.emailVerified && (
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4">
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs font-medium flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <span>
+                {lang === 'am'
+                  ? 'የገቡበት የGoogle ኢሜል የተረጋገጠ (Verified) አይደለም። ማስታወቂያ ለመለጠፍ ወይም ትዕዛዝ ለመላክ በተረጋገጠ Gmail መለያ ይግቡ።'
+                  : 'Your Google account email is not verified. Please sign in with a verified Gmail account to publish listings or send orders.'}
+              </span>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="px-3 py-1.5 rounded-lg bg-amber-900 text-white text-xs font-semibold hover:bg-amber-800 whitespace-nowrap shrink-0"
+              >
+                {t.signOut}
+              </button>
+            </div>
+          </div>
+        )}
         {activeNav === 'dashboard' ? (
           <DashboardView
             lang={lang}
@@ -1624,8 +1642,16 @@ export default function App() {
               </div>
 
               {dataError && (
-                <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 text-xs font-medium text-amber-950">
-                  {dataError}
+                <div className="p-4 rounded-xl border border-amber-300 bg-amber-50 text-xs font-medium text-amber-950 flex items-center justify-between gap-3">
+                  <span>{dataError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setDataError(null)}
+                    aria-label="Dismiss message"
+                    className="p-1 rounded-lg hover:bg-amber-100 shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               )}
 
