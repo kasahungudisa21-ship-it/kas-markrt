@@ -146,17 +146,6 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
-    }
-  }
-}
-testConnection();
-
 export async function consumeRedirectSignInResult(): Promise<void> {
   await getRedirectResult(auth);
 }
@@ -259,8 +248,14 @@ export async function syncUserProfile(user: User): Promise<void> {
 export async function getMySavedPhone(uid: string): Promise<string> {
   const cleanUid = sanitizeId(uid);
   const path = `users/${cleanUid}/private/info`;
+  const ref = doc(db, 'users', cleanUid, 'private', 'info');
   try {
-    const snap = await getDocFromServer(doc(db, 'users', cleanUid, 'private', 'info'));
+    let snap;
+    try {
+      snap = await getDocFromServer(ref);
+    } catch {
+      snap = await getDoc(ref);
+    }
     if (snap.exists()) {
       const phone = snap.data()?.phone;
       return typeof phone === 'string' ? phone : '';

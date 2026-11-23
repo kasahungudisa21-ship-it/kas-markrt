@@ -328,6 +328,14 @@ export function BuyerView({
       setFormError(lang === 'am' ? 'ትክክለኛ በጀት ያስገቡ።' : 'Enter a valid budget greater than 0.');
       return;
     }
+    if (wantedLocation.trim().length < 2) {
+      setFormError(
+        lang === 'am'
+          ? 'ተመራጭ ሰፈር / አካባቢ ቢያንስ 2 ፊደላት መሆን አለበት።'
+          : 'Please enter a preferred neighborhood (at least 2 characters).'
+      );
+      return;
+    }
     if (wantedPhone.trim().length < 6) {
       setFormError(t.phoneValidationError);
       return;
@@ -489,7 +497,18 @@ export function BuyerView({
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
           <button
             type="button"
-            onClick={() => setCategory('all')}
+            onClick={() => {
+              setCategory('all');
+              setRoomClassFilter('all');
+              setTenantPrefFilter('all');
+              setVehicleTypeFilter('all');
+              setVehicleModelFilter('');
+              setVehicleYearFilter('');
+              setGoodsTypeFilter('all');
+              setGoodsModelFilter('');
+              setGoodsItemFilter('');
+              setGoodsConditionFilter('all');
+            }}
             className={`p-3 rounded-xl border text-left transition-colors flex flex-col justify-center ${
               category === 'all'
                 ? 'border-[#0F4C3A] bg-[#0F4C3A] text-white font-semibold shadow-sm'

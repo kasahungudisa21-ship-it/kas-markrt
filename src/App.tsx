@@ -886,7 +886,10 @@ export default function App() {
                           <button
                             key={opt.key}
                             type="button"
-                            onClick={() => setTxFilter(opt.key)}
+                            onClick={() => {
+                              setTxFilter(opt.key);
+                              if (opt.key === 'sale') setTenantPrefFilter('all');
+                            }}
                             className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-150 whitespace-nowrap shrink-0 ${
                               txFilter === opt.key
                                 ? 'bg-amber-400 text-[#08211B] shadow-sm'
@@ -1185,7 +1188,10 @@ export default function App() {
                       <button
                         key={opt.key}
                         type="button"
-                        onClick={() => setTxFilter(opt.key)}
+                        onClick={() => {
+                          setTxFilter(opt.key);
+                          if (opt.key === 'sale') setTenantPrefFilter('all');
+                        }}
                         className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-150 whitespace-nowrap shrink-0 ${
                           txFilter === opt.key
                             ? 'bg-[#B45309] text-white shadow-sm'
@@ -1222,20 +1228,22 @@ export default function App() {
                         <option value="3_plus">{t.roomClass3Plus}</option>
                       </select>
 
-                      <select
-                        aria-label={t.tenantPrefLabel}
-                        value={tenantPrefFilter}
-                        onChange={(e) =>
-                          setTenantPrefFilter(
-                            e.target.value as 'all' | 'late' | 'bale_tedar'
-                          )
-                        }
-                        className="h-9 px-3 rounded-xl border border-[#DED8CC] bg-[#FAF8F4] text-xs font-semibold text-[#173028] focus:outline-none focus:ring-2 focus:ring-emerald-800"
-                      >
-                        <option value="all">{t.tenantPrefAll}</option>
-                        <option value="late">{t.tenantPrefLate}</option>
-                        <option value="bale_tedar">{t.tenantPrefBaleTedar}</option>
-                      </select>
+                      {(txFilter !== 'sale' || tenantPrefFilter !== 'all') && (
+                        <select
+                          aria-label={t.tenantPrefLabel}
+                          value={tenantPrefFilter}
+                          onChange={(e) =>
+                            setTenantPrefFilter(
+                              e.target.value as 'all' | 'late' | 'bale_tedar'
+                            )
+                          }
+                          className="h-9 px-3 rounded-xl border border-[#DED8CC] bg-[#FAF8F4] text-xs font-semibold text-[#173028] focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                        >
+                          <option value="all">{t.tenantPrefAll}</option>
+                          <option value="late">{t.tenantPrefLate}</option>
+                          <option value="bale_tedar">{t.tenantPrefBaleTedar}</option>
+                        </select>
+                      )}
                     </>
                   )}
 
