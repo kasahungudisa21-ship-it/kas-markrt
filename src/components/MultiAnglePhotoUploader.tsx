@@ -213,11 +213,16 @@ export function MultiAnglePhotoUploader({
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-zinc-900">{t.photosSectionTitle}</span>
             <span className="text-xs font-mono font-semibold text-emerald-800 tabular-nums">
               {filledCount} / 6
             </span>
+            {filledCount === 0 && (
+              <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                {lang === 'am' ? 'ቢያንስ 1 ፎቶ ግዴታ ነው' : 'At least 1 photo required'}
+              </span>
+            )}
           </div>
           <p className="text-xs text-zinc-500">{t.photosSectionSub}</p>
         </div>

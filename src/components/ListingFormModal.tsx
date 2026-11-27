@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { User } from 'firebase/auth';
 import { Lock, X } from 'lucide-react';
 import { NEIGHBORHOOD_OPTIONS } from '../data/showcaseListings';
@@ -99,6 +99,14 @@ export function ListingFormModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [agreedLegal, setAgreedLegal] = useState(false);
+  const errorRef = useRef<HTMLDivElement | null>(null);
+
+  const showValidationError = (msg: string) => {
+    setErrorMsg(msg);
+    requestAnimationFrame(() => {
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -245,22 +253,32 @@ export function ListingFormModal({
       onRequireSignIn();
       return;
     }
+    if (!user.emailVerified) {
+      showValidationError(
+        lang === 'am'
+          ? 'የገቡበት የGoogle ኢሜል የተረጋገጠ (Verified) አይደለም። እባክዎ በተረጋገጠ የGmail መለያ ይግቡ።'
+          : 'Your Google account email is not verified. Please sign in with a verified Gmail account.'
+      );
+      return;
+    }
 
     const numericPrice = Number(price);
     if (title.trim().length < 3) {
-      setErrorMsg(lang === 'am' ? 'ርዕስ ቢያንስ 3 ፊደላት መሆን አለበት።' : 'Headline must be at least 3 characters.');
+      showValidationError(
+        lang === 'am' ? 'ርዕስ ቢያንስ 3 ፊደላት መሆን አለበት።' : 'Headline must be at least 3 characters.'
+      );
       return;
     }
     if (description.trim().length < 10 && descriptionVoiceUrl.length < 20) {
-      setErrorMsg(t.voiceOrTextError);
+      showValidationError(t.voiceOrTextError);
       return;
     }
     if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-      setErrorMsg(lang === 'am' ? 'ትክክለኛ ዋጋ ያስገቡ።' : 'Enter a valid price greater than 0.');
+      showValidationError(lang === 'am' ? 'ትክክለኛ ዋጋ ያስገቡ።' : 'Enter a valid price greater than 0.');
       return;
     }
     if (neighborhood.trim().length < 2) {
-      setErrorMsg(
+      showValidationError(
         lang === 'am'
           ? 'እባክዎ አካባቢውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
           : 'Neighborhood must be at least 2 characters.'
@@ -268,7 +286,7 @@ export function ListingFormModal({
       return;
     }
     if (city.trim().length < 2) {
-      setErrorMsg(
+      showValidationError(
         lang === 'am'
           ? 'እባክዎ ከተማውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
           : 'City must be at least 2 characters.'
@@ -276,11 +294,11 @@ export function ListingFormModal({
       return;
     }
     if (!editingListing && sellerPhone.trim().length < 6) {
-      setErrorMsg(t.phoneValidationError);
+      showValidationError(t.phoneValidationError);
       return;
     }
     if (uploadedPhotos.length === 0) {
-      setErrorMsg(t.photoRequiredError);
+      showValidationError(t.photoRequiredError);
       return;
     }
 
@@ -311,7 +329,7 @@ export function ListingFormModal({
     }
 
     if (!agreedLegal) {
-      setErrorMsg(t.legalMustAcceptError);
+      showValidationError(t.legalMustAcceptError);
       return;
     }
 
@@ -348,7 +366,7 @@ export function ListingFormModal({
       onSuccess();
       onClose();
     } catch (err) {
-      setErrorMsg(formatFirestoreUserError(err, lang));
+      showValidationError(formatFirestoreUserError(err, lang));
     } finally {
       setSubmitting(false);
     }
@@ -388,7 +406,7 @@ export function ListingFormModal({
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="p-6 space-y-5">
             {!editingListing && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -634,7 +652,7 @@ export function ListingFormModal({
                     <label className="block text-xs font-medium text-zinc-700 mb-1">{t.areaSqm} (m²)</label>
                     <input
                       type="number"
-                      min={1}
+                      min={0}
                       max={1000000}
                       value={areaSqm}
                       onChange={(e) => setAreaSqm(e.target.value)}
@@ -661,7 +679,7 @@ export function ListingFormModal({
                   <label className="block text-xs font-medium text-zinc-700 mb-1">{t.areaSqm} (m²)</label>
                   <input
                     type="number"
-                    min={1}
+                    min={0}
                     max={1000000}
                     value={areaSqm}
                     onChange={(e) => setAreaSqm(e.target.value)}
@@ -978,7 +996,15 @@ export function ListingFormModal({
               </span>
             </label>
 
-            {errorMsg && <p className="text-xs text-red-700">{errorMsg}</p>}
+            {errorMsg && (
+              <div
+                ref={errorRef}
+                role="alert"
+                className="p-3 rounded-lg border border-red-300 bg-red-50 text-xs font-medium text-red-800 leading-relaxed"
+              >
+                {errorMsg}
+              </div>
+            )}
 
             <div className="pt-3 border-t border-zinc-200 flex items-center justify-end gap-3">
               <button
@@ -993,7 +1019,13 @@ export function ListingFormModal({
                 disabled={submitting}
                 className="px-5 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 text-white text-sm font-medium transition-colors"
               >
-                {editingListing ? t.saveChanges : t.submitListing}
+                {submitting
+                  ? lang === 'am'
+                    ? 'በመለጠፍ ላይ...'
+                    : 'Publishing...'
+                  : editingListing
+                  ? t.saveChanges
+                  : t.submitListing}
               </button>
             </div>
           </form>

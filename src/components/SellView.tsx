@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { User } from 'firebase/auth';
 import {
   ArrowLeft,
@@ -125,6 +125,14 @@ export function SellView({
   const [submitting, setSubmitting] = useState(false);
   const [publishedSuccess, setPublishedSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const errorRef = useRef<HTMLDivElement | null>(null);
+
+  const showValidationError = (msg: string) => {
+    setErrorMsg(msg);
+    requestAnimationFrame(() => {
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
 
   const handleTransactionChange = (nextTx: TransactionType) => {
     setTransactionType(nextTx);
@@ -240,24 +248,32 @@ export function SellView({
       onSignIn();
       return;
     }
+    if (!user.emailVerified) {
+      showValidationError(
+        lang === 'am'
+          ? 'የገቡበት የGoogle ኢሜል የተረጋገጠ (Verified) አይደለም። እባክዎ በተረጋገጠ የGmail መለያ ይግቡ።'
+          : 'Your Google account email is not verified. Please sign in with a verified Gmail account.'
+      );
+      return;
+    }
 
     const numericPrice = Number(price);
     if (title.trim().length < 3) {
-      setErrorMsg(
+      showValidationError(
         lang === 'am' ? 'ርዕስ ቢያንስ 3 ፊደላት መሆን አለበት።' : 'Headline must be at least 3 characters.'
       );
       return;
     }
     if (description.trim().length < 10 && descriptionVoiceUrl.length < 20) {
-      setErrorMsg(t.voiceOrTextError);
+      showValidationError(t.voiceOrTextError);
       return;
     }
     if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-      setErrorMsg(lang === 'am' ? 'ትክክለኛ ዋጋ ያስገቡ።' : 'Enter a valid price greater than 0.');
+      showValidationError(lang === 'am' ? 'ትክክለኛ ዋጋ ያስገቡ።' : 'Enter a valid price greater than 0.');
       return;
     }
     if (neighborhood.trim().length < 2) {
-      setErrorMsg(
+      showValidationError(
         lang === 'am'
           ? 'እባክዎ አካባቢውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
           : 'Neighborhood must be at least 2 characters.'
@@ -265,7 +281,7 @@ export function SellView({
       return;
     }
     if (city.trim().length < 2) {
-      setErrorMsg(
+      showValidationError(
         lang === 'am'
           ? 'እባክዎ ከተማውን በትክክል ይጻፉ (ቢያንስ 2 ፊደላት)።'
           : 'City must be at least 2 characters.'
@@ -273,15 +289,15 @@ export function SellView({
       return;
     }
     if (sellerPhone.trim().length < 6) {
-      setErrorMsg(t.phoneValidationError);
+      showValidationError(t.phoneValidationError);
       return;
     }
     if (uploadedPhotos.length === 0) {
-      setErrorMsg(t.photoRequiredError);
+      showValidationError(t.photoRequiredError);
       return;
     }
     if (!agreedLegal) {
-      setErrorMsg(t.legalMustAcceptError);
+      showValidationError(t.legalMustAcceptError);
       return;
     }
 
@@ -323,7 +339,7 @@ export function SellView({
       setAgreedLegal(false);
       setPublishedSuccess(true);
     } catch (err) {
-      setErrorMsg(formatFirestoreUserError(err, lang));
+      showValidationError(formatFirestoreUserError(err, lang));
     } finally {
       setSubmitting(false);
     }
@@ -446,7 +462,7 @@ export function SellView({
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} noValidate className="space-y-6">
               {publishedSuccess && (
                 <div className="p-4 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-950 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-start gap-2.5">
@@ -743,7 +759,7 @@ export function SellView({
                       </label>
                       <input
                         type="number"
-                        min={1}
+                        min={0}
                         max={1000000}
                         value={areaSqm}
                         onChange={(e) => setAreaSqm(e.target.value)}
@@ -774,7 +790,7 @@ export function SellView({
                     </label>
                     <input
                       type="number"
-                      min={1}
+                      min={0}
                       max={1000000}
                       value={areaSqm}
                       onChange={(e) => setAreaSqm(e.target.value)}
@@ -1097,7 +1113,11 @@ export function SellView({
               </label>
 
               {errorMsg && (
-                <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-xs text-red-800 leading-relaxed">
+                <div
+                  ref={errorRef}
+                  role="alert"
+                  className="p-3.5 rounded-lg border border-red-300 bg-red-50 text-xs font-medium text-red-800 leading-relaxed"
+                >
                   {errorMsg}
                 </div>
               )}
@@ -1115,7 +1135,11 @@ export function SellView({
                   disabled={submitting}
                   className="px-6 py-2.5 rounded-lg bg-[#0F4C3A] hover:bg-[#0B3B2D] disabled:opacity-60 text-white text-sm font-semibold transition-colors"
                 >
-                  {t.submitListing}
+                  {submitting
+                    ? lang === 'am'
+                      ? 'በመለጠፍ ላይ...'
+                      : 'Publishing...'
+                    : t.submitListing}
                 </button>
               </div>
             </form>
@@ -1135,7 +1159,13 @@ export function SellView({
                 category={previewListing.category}
                 className="w-full h-full object-cover"
               />
-              {uploadedPhotos.length > 0 && (
+              {uploadedPhotos.length === 0 ? (
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 py-2.5 text-xs font-medium text-amber-200">
+                  {lang === 'am'
+                    ? 'ምሳሌ ፎቶ · ለመለጠፍ ቢያንስ 1 ፎቶ ከታች ያስገቡ'
+                    : 'Sample preview · Upload at least 1 photo below to publish'}
+                </div>
+              ) : (
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent px-4 py-2.5 flex items-center justify-between text-xs text-white">
                   <span className="truncate text-amber-200">{uploadedPhotos[0].angleLabel}</span>
                   <span className="font-mono tabular-nums text-emerald-200 shrink-0">

@@ -722,17 +722,6 @@ export async function createListing(user: User, input: ListingInput): Promise<st
       });
     });
 
-    videoChunks.forEach((chunkData, chunkIdx) => {
-      batch.set(doc(db, 'listings', id, 'videoChunks', `chunk_${chunkIdx}`), {
-        listingId: id,
-        ownerId: cleanUid,
-        chunkIndex: chunkIdx,
-        data: chunkData,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    });
-
     batch.set(
       doc(db, 'users', cleanUid, 'private', 'info'),
       {
@@ -757,6 +746,26 @@ export async function createListing(user: User, input: ListingInput): Promise<st
     );
 
     await batch.commit();
+
+    if (videoChunks.length > 0) {
+      for (let start = 0; start < videoChunks.length; start += 8) {
+        const chunkBatch = writeBatch(db);
+        const slice = videoChunks.slice(start, start + 8);
+        slice.forEach((chunkData, offset) => {
+          const chunkIdx = start + offset;
+          chunkBatch.set(doc(db, 'listings', id, 'videoChunks', `chunk_${chunkIdx}`), {
+            listingId: id,
+            ownerId: cleanUid,
+            chunkIndex: chunkIdx,
+            data: chunkData,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        });
+        await chunkBatch.commit();
+      }
+    }
+
     return id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
@@ -885,41 +894,6 @@ export async function updateListingDetails(
       });
     }
 
-    if (input.videoModified && user) {
-      const cleanUid = sanitizeId(user.uid);
-      const existingVideoByDocId = new Map<string, boolean>();
-      existingVideoSnap?.docs.forEach((d) => {
-        existingVideoByDocId.set(d.id, true);
-      });
-
-      const activeVideoDocIds = new Set<string>();
-      nextVideoChunks.forEach((chunkData, chunkIdx) => {
-        const docId = `chunk_${chunkIdx}`;
-        activeVideoDocIds.add(docId);
-        if (existingVideoByDocId.has(docId)) {
-          batch.update(doc(db, 'listings', cleanId, 'videoChunks', docId), {
-            data: chunkData,
-            updatedAt: serverTimestamp(),
-          });
-        } else {
-          batch.set(doc(db, 'listings', cleanId, 'videoChunks', docId), {
-            listingId: cleanId,
-            ownerId: cleanUid,
-            chunkIndex: chunkIdx,
-            data: chunkData,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-      });
-
-      existingVideoByDocId.forEach((_, docId) => {
-        if (!activeVideoDocIds.has(docId)) {
-          batch.delete(doc(db, 'listings', cleanId, 'videoChunks', docId));
-        }
-      });
-    }
-
     if (user && cleanPhone.length >= 6) {
       const cleanUid = sanitizeId(user.uid);
       batch.set(
@@ -946,6 +920,63 @@ export async function updateListingDetails(
     }
 
     await batch.commit();
+
+    if (input.videoModified && user) {
+      const cleanUid = sanitizeId(user.uid);
+      const existingVideoByDocId = new Map<string, boolean>();
+      existingVideoSnap?.docs.forEach((d) => {
+        existingVideoByDocId.set(d.id, true);
+      });
+
+      type VideoChunkOp =
+        | { kind: 'update'; docId: string; chunkData: string }
+        | { kind: 'set'; docId: string; chunkIdx: number; chunkData: string }
+        | { kind: 'delete'; docId: string };
+
+      const videoOps: VideoChunkOp[] = [];
+      const activeVideoDocIds = new Set<string>();
+      nextVideoChunks.forEach((chunkData, chunkIdx) => {
+        const docId = `chunk_${chunkIdx}`;
+        activeVideoDocIds.add(docId);
+        if (existingVideoByDocId.has(docId)) {
+          videoOps.push({ kind: 'update', docId, chunkData });
+        } else {
+          videoOps.push({ kind: 'set', docId, chunkIdx, chunkData });
+        }
+      });
+
+      existingVideoByDocId.forEach((_, docId) => {
+        if (!activeVideoDocIds.has(docId)) {
+          videoOps.push({ kind: 'delete', docId });
+        }
+      });
+
+      for (let start = 0; start < videoOps.length; start += 8) {
+        const videoBatch = writeBatch(db);
+        const slice = videoOps.slice(start, start + 8);
+        slice.forEach((op) => {
+          const ref = doc(db, 'listings', cleanId, 'videoChunks', op.docId);
+          if (op.kind === 'update') {
+            videoBatch.update(ref, {
+              data: op.chunkData,
+              updatedAt: serverTimestamp(),
+            });
+          } else if (op.kind === 'set') {
+            videoBatch.set(ref, {
+              listingId: cleanId,
+              ownerId: cleanUid,
+              chunkIndex: op.chunkIdx,
+              data: op.chunkData,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          } else {
+            videoBatch.delete(ref);
+          }
+        });
+        await videoBatch.commit();
+      }
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }

@@ -441,21 +441,25 @@ service cloud.firestore {
           && incoming().listingId == listingId
           && incoming().createdAt == request.time
           && incoming().updatedAt == request.time
-          && existsAfter(/databases/$(database)/documents/listings/$(listingId))
           && (
-            isAdmin()
-            || (
+            (
               incoming().ownerId == request.auth.uid
               && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+            || (
+              isAdmin()
+              && existsAfter(/databases/$(database)/documents/listings/$(listingId))
             )
           );
         allow update: if isVerified() && isValidId(listingId) && isValidId(photoId)
           && isValidListingPhoto(incoming())
-          && (isAdmin() || (
-            existing().ownerId == request.auth.uid
-            && exists(/databases/$(database)/documents/listings/$(listingId))
-            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
-          ))
+          && (
+            (
+              existing().ownerId == request.auth.uid
+              && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+            || isAdmin()
+          )
           && incoming().listingId == existing().listingId
           && incoming().ownerId == existing().ownerId
           && incoming().slotIndex == existing().slotIndex
@@ -463,11 +467,13 @@ service cloud.firestore {
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly(['angleLabel', 'imageDataUrl', 'updatedAt']);
         allow delete: if isVerified() && isValidId(listingId) && isValidId(photoId)
-          && (isAdmin() || (
-            existing().ownerId == request.auth.uid
-            && exists(/databases/$(database)/documents/listings/$(listingId))
-            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
-          ));
+          && (
+            (
+              existing().ownerId == request.auth.uid
+              && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+            || isAdmin()
+          );
       }
 
       // Optional chunked walkthrough video (up to 15 chunks x 200 KB)
@@ -480,21 +486,25 @@ service cloud.firestore {
           && incoming().listingId == listingId
           && incoming().createdAt == request.time
           && incoming().updatedAt == request.time
-          && existsAfter(/databases/$(database)/documents/listings/$(listingId))
           && (
-            isAdmin()
-            || (
+            (
               incoming().ownerId == request.auth.uid
               && getAfter(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+            || (
+              isAdmin()
+              && existsAfter(/databases/$(database)/documents/listings/$(listingId))
             )
           );
         allow update: if isVerified() && isValidId(listingId) && isValidId(chunkId)
           && isValidListingVideoChunk(incoming())
-          && (isAdmin() || (
-            existing().ownerId == request.auth.uid
-            && exists(/databases/$(database)/documents/listings/$(listingId))
-            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
-          ))
+          && (
+            (
+              existing().ownerId == request.auth.uid
+              && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+            || isAdmin()
+          )
           && incoming().listingId == existing().listingId
           && incoming().ownerId == existing().ownerId
           && incoming().chunkIndex == existing().chunkIndex
@@ -502,11 +512,13 @@ service cloud.firestore {
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly(['data', 'updatedAt']);
         allow delete: if isVerified() && isValidId(listingId) && isValidId(chunkId)
-          && (isAdmin() || (
-            existing().ownerId == request.auth.uid
-            && exists(/databases/$(database)/documents/listings/$(listingId))
-            && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
-          ));
+          && (
+            (
+              existing().ownerId == request.auth.uid
+              && get(/databases/$(database)/documents/listings/$(listingId)).data.ownerId == request.auth.uid
+            )
+            || isAdmin()
+          );
       }
     }
 
